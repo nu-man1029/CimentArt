@@ -569,12 +569,39 @@ function MaterialCard({ materialKey, index = 0, autoSel, manualSel, onManualChan
           )}
         </div>
       )}
+      {isM && cov > area && area > 0 && (() => {
+        const jobCost = Math.round(cost * area / cov);
+        const surplusCov = cov - area;
+        const surplusVal = cost - jobCost;
+        return (
+          <div style={{ margin: "0 16px 8px", padding: "10px 12px", borderRadius: 4, background: "#f0f7f2", border: "1px solid #b2dfca" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#3d7a58", marginBottom: 8 }}>📦 余り材料の試算</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+              <div>
+                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>購入合計</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{fmt(cost)}</div>
+                <div style={{ fontSize: 10, color: C.muted }}>{cov.toFixed(1)}㎡分</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>この現場の実質費用</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#3d7a58" }}>{fmt(jobCost)}</div>
+                <div style={{ fontSize: 10, color: C.muted }}>{area.toFixed(1)}㎡分</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>余り材料</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.accent }}>{surplusCov.toFixed(1)}㎡</div>
+                <div style={{ fontSize: 10, color: C.muted }}>残存価値 {fmt(surplusVal)}</div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       {isM && (
         <div style={{ padding: "0 16px 12px" }}>
           <textarea
             value={note}
             onChange={(e) => onNoteChange(materialKey, e.target.value)}
-            placeholder="調整理由を記録（例：残材があるため個数を減らした）"
+            placeholder="調整理由を記録（例：5kg×1個に変更 → 余り20㎡分は次現場へ）"
             rows={2}
             style={{
               width: "100%", padding: "6px 10px", borderRadius: 3,
@@ -1580,6 +1607,23 @@ export default function App() {
     return workflow.reduce((s, k) => s + calcLineItems(k, manual[k] || autoSel[k] || []).reduce((a, i) => a + i.subtotal, 0), 0);
   }, [done, workflow, autoSel, manual]);
 
+  const surplusInfo = useMemo(() => {
+    if (!done || sqm <= 0) return null;
+    let totalSurplusVal = 0;
+    let hasAny = false;
+    workflow.forEach((k) => {
+      const items = calcLineItems(k, manual[k] || autoSel[k] || []);
+      const cost = items.reduce((s, i) => s + i.subtotal, 0);
+      const cov = items.reduce((s, i) => s + (i.totalCov || 0), 0);
+      if (cov > sqm && cov > 0) {
+        totalSurplusVal += cost - Math.round(cost * sqm / cov);
+        hasAny = true;
+      }
+    });
+    if (!hasAny) return null;
+    return { jobCost: matTotal - totalSurplusVal, totalSurplusVal };
+  }, [done, workflow, autoSel, manual, sqm, matTotal]);
+
   const pigTotal = pigments.reduce((s, sp) => { const p = PIGMENTS.find((x) => x.id === sp.id); return s + (p ? p.sizes[sp.sizeIdx].price * sp.qty : 0); }, 0);
   const grand = matTotal + pigTotal;
   const uPrice = sqm > 0 ? Math.round(grand / sqm) : 0;
@@ -1849,10 +1893,22 @@ export default function App() {
             <PigmentSelector pigs={pigments} onChange={setPigments} />
 
             <div style={{ background: C.dark, borderRadius: 4, padding: 20, marginTop: 8, border: `2px solid ${C.accent}` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ color: "#999", fontSize: 13, fontWeight: 600 }}>材料費</span>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: surplusInfo ? 4 : 8 }}>
+                <span style={{ color: "#999", fontSize: 13, fontWeight: 600 }}>材料費（購入合計）</span>
                 <span style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>{fmtT(matTotal)}</span>
               </div>
+              {surplusInfo && (
+                <div style={{ marginBottom: 8, padding: "8px 10px", borderRadius: 4, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ color: "#7db88a", fontSize: 12, fontWeight: 600 }}>うちこの現場の実質費用</span>
+                    <span style={{ color: "#7db88a", fontSize: 13, fontWeight: 700 }}>{fmtT(surplusInfo.jobCost)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: C.gold, fontSize: 12, fontWeight: 600 }}>余り材料の残存価値</span>
+                    <span style={{ color: C.gold, fontSize: 13, fontWeight: 700 }}>+{fmtT(surplusInfo.totalSurplusVal)}</span>
+                  </div>
+                </div>
+              )}
               {pigTotal > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                   <span style={{ color: "#999", fontSize: 13, fontWeight: 600 }}>顔料</span>
@@ -1863,6 +1919,12 @@ export default function App() {
                 <span style={{ color: "#fff", fontSize: 15, fontWeight: 800 }}>合計{taxIncl ? "（税込）" : "（税抜）"}</span>
                 <span style={{ color: C.gold, fontSize: 24, fontWeight: 800 }}>{fmtT(grand)}</span>
               </div>
+              {surplusInfo && (
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                  <span style={{ color: "#7db88a", fontSize: 12 }}>この現場の実質材料費</span>
+                  <span style={{ color: "#7db88a", fontSize: 14, fontWeight: 700 }}>{fmtT(surplusInfo.jobCost + pigTotal)}</span>
+                </div>
+              )}
               <div style={{ textAlign: "right", marginTop: 4 }}>
                 <span style={{ color: "#999", fontSize: 12 }}>㎡単価 {fmtT(uPrice)}/㎡</span>
               </div>
