@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    CimentArt 材料費シミュレーター
@@ -558,6 +558,200 @@ function PigmentSelector({ pigs, onChange }) {
   );
 }
 
+/* ━━━ PDF出力 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function printEstimate({ projectName, sqm, finish, surf, clearType, workflow, autoSel, manual, pigments, matTotal, pigTotal, grand, uPrice }) {
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}`;
+  const finishName = FINISH_OPTIONS.find((f) => f.id === finish)?.name || finish;
+  const surfName = SURFACE_OPTIONS.find((s) => s.id === surf)?.name || surf;
+  const clearName = CLEAR_OPTIONS.find((c) => c.id === clearType)?.name || clearType;
+
+  const matRows = workflow.map((k) => {
+    const mat = MATERIALS[k];
+    const items = calcLineItems(k, manual[k] || autoSel[k] || []);
+    return items.map((item) =>
+      `<tr>
+        <td>${mat.name.replace(/【\d】\s*/, "")}</td>
+        <td>${item.label}</td>
+        <td style="text-align:right">${item.qty}個</td>
+        <td style="text-align:right">${fmt(item.price)}</td>
+        <td style="text-align:right">${fmt(item.subtotal)}</td>
+      </tr>`
+    ).join("");
+  }).join("");
+
+  const pigRows = pigments.map((sp) => {
+    const p = PIGMENTS.find((x) => x.id === sp.id);
+    if (!p) return "";
+    const sz = p.sizes[sp.sizeIdx];
+    return `<tr>
+      <td>${p.name}</td>
+      <td>${sz.label}</td>
+      <td style="text-align:right">${sp.qty}個</td>
+      <td style="text-align:right">${fmt(sz.price)}</td>
+      <td style="text-align:right">${fmt(sz.price * sp.qty)}</td>
+    </tr>`;
+  }).join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>${dateStr}_${projectName || "現場"}_CimentArt見積</title>
+<style>
+  body { font-family: "Noto Sans JP","Hiragino Sans",sans-serif; color: #1a1a1a; margin: 0; padding: 24px; font-size: 13px; }
+  h1 { font-size: 20px; color: #8b7355; margin: 0 0 4px; }
+  .sub { color: #999; font-size: 11px; margin: 0 0 20px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .info-box { border: 1px solid #e0ddd8; border-radius: 4px; padding: 10px 14px; }
+  .info-box .label { font-size: 10px; color: #999; font-weight: 600; }
+  .info-box .value { font-size: 16px; font-weight: 800; color: #2c2c2c; margin-top: 2px; }
+  .info-box .value.accent { color: #c9a96e; font-size: 18px; }
+  .section-title { font-size: 13px; font-weight: 700; color: #8b7355; border-left: 3px solid #8b7355; padding-left: 8px; margin: 16px 0 8px; }
+  .workflow { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 16px; }
+  .step { background: #f3efe8; color: #6b563e; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 3px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #f7f6f4; padding: 7px 10px; font-weight: 600; color: #999; font-size: 11px; border-bottom: 2px solid #e0ddd8; text-align: left; }
+  td { padding: 7px 10px; border-bottom: 1px solid #f0eeea; }
+  .total-box { margin-top: 16px; border: 2px solid #8b7355; border-radius: 4px; padding: 16px; background: #f3efe8; }
+  .total-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+  .grand { font-size: 22px; font-weight: 800; color: #8b7355; }
+  .footer { margin-top: 24px; font-size: 10px; color: #bbb; border-top: 1px solid #e0ddd8; padding-top: 10px; }
+  @media print { body { padding: 12px; } }
+</style>
+</head>
+<body>
+<h1>CimentArt 材料費見積</h1>
+<p class="sub">Cement Artist Nu☆Man（株式会社KENSIN） — ${today.toLocaleDateString("ja-JP")}</p>
+
+<div class="info-grid">
+  <div class="info-box"><div class="label">現場名</div><div class="value" style="font-size:14px">${projectName || "—"}</div></div>
+  <div class="info-box"><div class="label">施工面積</div><div class="value">${sqm}㎡</div></div>
+  <div class="info-box"><div class="label">㎡単価</div><div class="value accent">${fmt(uPrice)}/㎡</div></div>
+</div>
+
+<div class="section-title">施工条件</div>
+<table style="margin-bottom:12px">
+  <tr><th>仕上げ材</th><th>施工箇所</th><th>クリア仕上げ</th></tr>
+  <tr><td>${finishName}</td><td>${surfName}</td><td>${clearName}</td></tr>
+</table>
+
+<div class="section-title">施工手順</div>
+<div class="workflow">
+  ${workflow.map((k) => `<span class="step">${MATERIALS[k]?.name || k}</span>`).join('<span style="color:#ccc;margin:0 2px">→</span>')}
+</div>
+
+<div class="section-title">材料明細</div>
+<table>
+  <thead><tr><th>材料名</th><th>サイズ</th><th style="text-align:right">個数</th><th style="text-align:right">単価</th><th style="text-align:right">小計</th></tr></thead>
+  <tbody>${matRows}</tbody>
+</table>
+
+${pigRows ? `<div class="section-title">顔料</div>
+<table>
+  <thead><tr><th>顔料名</th><th>サイズ</th><th style="text-align:right">個数</th><th style="text-align:right">単価</th><th style="text-align:right">小計</th></tr></thead>
+  <tbody>${pigRows}</tbody>
+</table>` : ""}
+
+<div class="total-box">
+  <div class="total-row"><span>材料費</span><span>${fmt(matTotal)}</span></div>
+  ${pigTotal > 0 ? `<div class="total-row"><span>顔料</span><span>${fmt(pigTotal)}</span></div>` : ""}
+  <div class="total-row" style="border-top:1px solid #c9a96e;padding-top:10px;margin-top:6px;font-weight:800">
+    <span>合計（税抜）</span><span class="grand">${fmt(grand)}</span>
+  </div>
+  <div style="text-align:right;font-size:11px;color:#8b7355;margin-top:4px">㎡単価 ${fmt(uPrice)}/㎡</div>
+</div>
+
+<div class="footer">※本見積は材料費のみ。施工費・消費税は含みません。数量は自動最適化による概算です。</div>
+</body>
+</html>`;
+
+  const w = window.open("", "_blank");
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 500);
+}
+
+/* ━━━ localStorage helpers ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const LS_KEY = "cimentart_saved_v1";
+
+function loadSaved() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch { return []; }
+}
+
+function writeSaved(list) {
+  localStorage.setItem(LS_KEY, JSON.stringify(list));
+}
+
+function saveToLocal({ projectName, area, surface, finish, clearType, pigments, manual, grand, uPrice, sqm }) {
+  const list = loadSaved();
+  const now = new Date();
+  const key = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}_${projectName || "unnamed"}`;
+  const entry = { key, projectName, area, surface, finish, clearType, pigments, manual, grand, uPrice, sqm, savedAt: now.toLocaleString("ja-JP") };
+  const idx = list.findIndex((e) => e.key === key);
+  if (idx >= 0) list[idx] = entry; else list.unshift(entry);
+  writeSaved(list.slice(0, 30));
+  return list;
+}
+
+/* ━━━ SavedPanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function SavedPanel({ open, onClose, onRestore }) {
+  const [list, setList] = useState([]);
+  useEffect(() => { if (open) setList(loadSaved()); }, [open]);
+  if (!open) return null;
+
+  const del = (key) => {
+    const next = list.filter((e) => e.key !== key);
+    writeSaved(next);
+    setList(next);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 24px 14px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.white, zIndex: 1 }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>保存済み見積</h2>
+          <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", background: C.borderLt, fontSize: 14, cursor: "pointer", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        </div>
+        <div style={{ padding: "12px 20px 24px" }}>
+          {list.length === 0 ? (
+            <div style={{ textAlign: "center", color: C.muted, padding: "32px 0", fontSize: 13 }}>保存済みの見積はありません</div>
+          ) : (
+            list.map((entry) => {
+              const finishName = FINISH_OPTIONS.find((f) => f.id === entry.finish)?.name || entry.finish;
+              return (
+                <div key={entry.key} style={{ border: `1px solid ${C.border}`, borderRadius: 4, padding: "12px 14px", marginBottom: 8, background: C.bg }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{entry.projectName || "（現場名なし）"}</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{entry.savedAt} ／ {finishName} ／ {entry.sqm}㎡</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: C.accent, marginTop: 4 }}>{fmt(entry.grand)} <span style={{ fontSize: 11, fontWeight: 600, color: C.muted }}>（{fmt(entry.uPrice)}/㎡）</span></div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => { onRestore(entry); onClose(); }} style={{
+                        padding: "6px 12px", borderRadius: 3, border: `1.5px solid ${C.accent}`,
+                        background: C.accentLt, color: C.accentDk, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                      }}>復元</button>
+                      <button onClick={() => del(entry.key)} style={{
+                        padding: "6px 10px", borderRadius: 3, border: `1px solid ${C.border}`,
+                        background: C.white, color: C.ng, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      }}>削除</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ━━━ ReferencePanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function ReferencePanel({ open, onClose }) {
   if (!open) return null;
@@ -781,6 +975,8 @@ export default function App() {
   const [showRef, setShowRef] = useState(false);
   const [showQuick, setShowQuick] = useState(false);
   const [showColor, setShowColor] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
 
   const sqm = parseFloat(area) || 0;
   const fDef = FINISH_OPTIONS.find((f) => f.id === finish);
@@ -830,6 +1026,11 @@ export default function App() {
             <p style={{ margin: "2px 0 0", fontSize: 11, color: C.muted }}>Cement Artist Nu☆Man — 現場別コスト算出ツール</p>
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <button onClick={() => setShowSaved(true)} style={{
+              padding: "7px 11px", borderRadius: 4, border: `1px solid ${C.border}`,
+              background: C.white, color: C.sub, fontSize: 11, fontWeight: 700,
+              cursor: "pointer", whiteSpace: "nowrap",
+            }}>保存履歴</button>
             <button onClick={() => setShowColor(true)} style={{
               padding: "7px 11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
               background: C.accentLt, color: C.accentDk, fontSize: 11, fontWeight: 700,
@@ -974,8 +1175,25 @@ export default function App() {
               </div>
             </div>
 
+            {/* アクションボタン */}
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button onClick={() => printEstimate({ projectName, sqm, finish, surf, clearType, workflow, autoSel, manual, pigments, matTotal, pigTotal, grand, uPrice })}
+                style={{
+                  flex: 1, padding: "11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
+                  background: C.accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                }}>PDF保存</button>
+              <button onClick={() => {
+                saveToLocal({ projectName, area, surface: surf, finish, clearType, pigments, manual, grand, uPrice, sqm });
+                setSaveMsg("保存しました");
+                setTimeout(() => setSaveMsg(""), 2000);
+              }} style={{
+                flex: 1, padding: "11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
+                background: C.accentLt, color: C.accentDk, fontSize: 13, fontWeight: 700, cursor: "pointer",
+              }}>{saveMsg || "この見積を保存"}</button>
+            </div>
+
             <button onClick={() => { setManual({}); setDone(false); }} style={{
-              width: "100%", padding: "11px", borderRadius: 4, marginTop: 12,
+              width: "100%", padding: "11px", borderRadius: 4, marginTop: 8,
               border: `1px solid ${C.border}`, background: C.white, color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer",
             }}>条件をクリア</button>
           </>
@@ -985,6 +1203,16 @@ export default function App() {
       <ReferencePanel open={showRef} onClose={() => setShowRef(false)} />
       <QuickTablePanel open={showQuick} onClose={() => setShowQuick(false)} activeFinish={finish} />
       <ColorFormulaPanel open={showColor} onClose={() => setShowColor(false)} activeFinish={finish} />
+      <SavedPanel open={showSaved} onClose={() => setShowSaved(false)} onRestore={(entry) => {
+        setProjectName(entry.projectName || "");
+        setArea(String(entry.area));
+        setSurface(entry.surface);
+        setFinish(entry.finish);
+        setClearType(entry.clearType);
+        setPigments(entry.pigments || []);
+        setManual(entry.manual || {});
+        setDone(true);
+      }} />
     </div>
   );
 }
