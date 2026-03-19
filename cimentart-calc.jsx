@@ -61,6 +61,20 @@ function GlobalStyles() {
         filter: brightness(0.95);
         transform: translateY(-1px);
       }
+      .ca-backdrop {
+        animation: ca-backdrop-in 0.22s ease;
+      }
+      @keyframes ca-backdrop-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+      @keyframes ca-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.55; }
+      }
+      .ca-btn-loading {
+        animation: ca-pulse 0.8s ease infinite;
+      }
     `;
     document.head.appendChild(el);
   }, []);
@@ -441,7 +455,7 @@ const C = {
 };
 
 /* ━━━ MaterialCard ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function MaterialCard({ materialKey, autoSel, manualSel, onManualChange, area }) {
+function MaterialCard({ materialKey, index = 0, autoSel, manualSel, onManualChange, area }) {
   const mat = MATERIALS[materialKey];
   if (!mat) return null;
   const isM = !!manualSel;
@@ -454,6 +468,7 @@ function MaterialCard({ materialKey, autoSel, manualSel, onManualChange, area })
   return (
     <div className="ca-card" style={{
       background: C.white, borderRadius: 4, marginBottom: 10,
+      animationDelay: `${index * 0.05}s`,
       border: isM ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "13px 16px 7px" }}>
@@ -770,7 +785,7 @@ function SavedPanel({ open, onClose, onRestore }) {
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+    <div className="ca-backdrop" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
       <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
@@ -827,7 +842,7 @@ function ReferencePanel({ open, onClose }) {
   ];
   const th = { padding: "7px 10px", fontWeight: 600, fontSize: 11, color: C.muted, borderBottom: `2px solid ${C.border}`, letterSpacing: ".3px" };
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+    <div className="ca-backdrop" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
       <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
@@ -897,7 +912,7 @@ function QuickTablePanel({ open, onClose, activeFinish }) {
   if (!open) return null;
   const th = { padding: "7px 10px", fontWeight: 600, fontSize: 11, color: C.muted, borderBottom: `2px solid ${C.border}`, letterSpacing: ".3px" };
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+    <div className="ca-backdrop" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
       <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
@@ -962,7 +977,7 @@ function ColorFormulaPanel({ open, onClose, activeFinish }) {
   );
   const th = { padding: "5px 7px", fontWeight: 600, fontSize: 10, color: C.muted, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap", letterSpacing: ".2px" };
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+    <div className="ca-backdrop" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
       <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 900, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px", flexShrink: 0 }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
@@ -1034,6 +1049,7 @@ export default function App() {
   const [pigments, setPigments] = useState([]);
   const [manual, setManual] = useState({});
   const [done, setDone] = useState(false);
+  const [calc, setCalc] = useState(false);
   const [showRef, setShowRef] = useState(false);
   const [showQuick, setShowQuick] = useState(false);
   const [showColor, setShowColor] = useState(false);
@@ -1184,14 +1200,18 @@ export default function App() {
         </div>
 
         {/* Calc button */}
-        <button onClick={() => { setManual({}); setDone(true); }} disabled={sqm <= 0}
-          className="ca-btn-primary"
+        <button onClick={() => {
+            if (sqm <= 0) return;
+            setCalc(true);
+            setTimeout(() => { setManual({}); setDone(true); setCalc(false); }, 420);
+          }} disabled={sqm <= 0 || calc}
+          className={`ca-btn-primary${calc ? " ca-btn-loading" : ""}`}
           style={{
             width: "100%", padding: "13px", borderRadius: 4, border: "none",
             background: sqm > 0 ? C.accent : C.border, color: "#fff", fontSize: 15, fontWeight: 700,
             cursor: sqm > 0 ? "pointer" : "default", marginBottom: 18,
             boxShadow: sqm > 0 ? "0 2px 8px rgba(139,115,85,.2)" : "none",
-          }}>{done ? "再計算する" : "材料費を算出する"}</button>
+          }}>{calc ? "計算中…" : done ? "再計算する" : "材料費を算出する"}</button>
 
         {/* Results */}
         {done && sqm > 0 && (
@@ -1213,8 +1233,8 @@ export default function App() {
               材料明細{projectName && ` — ${projectName}`}
             </h3>
 
-            {workflow.map((k) => (
-              <MaterialCard key={k} materialKey={k} autoSel={autoSel[k] || []} manualSel={manual[k] || null} onManualChange={handleManual} area={sqm} />
+            {workflow.map((k, idx) => (
+              <MaterialCard key={k} materialKey={k} index={idx} autoSel={autoSel[k] || []} manualSel={manual[k] || null} onManualChange={handleManual} area={sqm} />
             ))}
 
             <PigmentSelector pigs={pigments} onChange={setPigments} />
