@@ -61,6 +61,20 @@ function GlobalStyles() {
         filter: brightness(0.95);
         transform: translateY(-1px);
       }
+      .ca-backdrop {
+        animation: ca-backdrop-in 0.22s ease;
+      }
+      @keyframes ca-backdrop-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+      @keyframes ca-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.55; }
+      }
+      .ca-btn-loading {
+        animation: ca-pulse 0.8s ease infinite;
+      }
     `;
     document.head.appendChild(el);
   }, []);
@@ -172,12 +186,12 @@ const PIGMENTS = [
 ];
 
 const FINISH_OPTIONS = [
-  { id: "aquaQuartz", name: "アクアクオーツ", surfaces: ["floor", "wall", "smooth"] },
-  { id: "aquaMicro", name: "アクアマイクロコンクリート", surfaces: ["floor", "wall", "smooth"] },
-  { id: "aquaNature", name: "アクアネイチャー", surfaces: ["floor", "wall", "smooth"] },
-  { id: "microStucco", name: "マイクロストゥック", surfaces: ["floor", "wall", "smooth"] },
-  { id: "aquaStone", name: "アクアストーン", surfaces: ["wall", "smooth"] },
-  { id: "metallic", name: "メタリック", surfaces: ["floor", "wall", "smooth"] },
+  { id: "aquaQuartz",  name: "アクアクオーツ",          surfaces: ["floor", "wall", "smooth"], desc: "スタンダードなモルタル風仕上げ。玄関・廊下・テラスに最適。耐久性が高く屋外でも使用可。" },
+  { id: "aquaMicro",  name: "アクアマイクロコンクリート", surfaces: ["floor", "wall", "smooth"], desc: "極薄（0.5mm）で既存床の上から施工可能。リノベーションに特に向く床・壁万能タイプ。" },
+  { id: "aquaNature", name: "アクアネイチャー",           surfaces: ["floor", "wall", "smooth"], desc: "石・テラコッタ・砂岩調の自然素材感。和モダン・ガーデン・テラコッタ風の空間演出に。" },
+  { id: "microStucco",name: "マイクロストゥック",         surfaces: ["floor", "wall", "smooth"], desc: "超薄塗り（0.1mm）のイタリア左官調仕上げ。壁・天井・什器など繊細な表現に最適。" },
+  { id: "aquaStone",  name: "アクアストーン",             surfaces: ["wall", "smooth"],          desc: "石目・大理石調の高級感ある仕上げ。壁・平滑下地専用。ライセンス講習受講者のみ施工可。" },
+  { id: "metallic",   name: "メタリック",                 surfaces: ["floor", "wall", "smooth"], desc: "金属粉を混合したラグジュアリー仕上げ。アクセントウォール・商業空間・什器塗装に映える。" },
 ];
 
 const SURFACE_OPTIONS = [
@@ -441,7 +455,7 @@ const C = {
 };
 
 /* ━━━ MaterialCard ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function MaterialCard({ materialKey, autoSel, manualSel, onManualChange, area }) {
+function MaterialCard({ materialKey, index = 0, autoSel, manualSel, onManualChange, area }) {
   const mat = MATERIALS[materialKey];
   if (!mat) return null;
   const isM = !!manualSel;
@@ -454,6 +468,7 @@ function MaterialCard({ materialKey, autoSel, manualSel, onManualChange, area })
   return (
     <div className="ca-card" style={{
       background: C.white, borderRadius: 4, marginBottom: 10,
+      animationDelay: `${index * 0.05}s`,
       border: isM ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "13px 16px 7px" }}>
@@ -621,12 +636,16 @@ function PigmentSelector({ pigs, onChange }) {
 }
 
 /* ━━━ PDF出力 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function printEstimate({ projectName, sqm, finish, surf, clearType, workflow, autoSel, manual, pigments, matTotal, pigTotal, grand, uPrice }) {
+function printEstimate({ projectName, sqm, finish, surf, clearType, workflow, autoSel, manual, pigments, matTotal, pigTotal, grand, uPrice, memo = "", laborCost = 0, taxIncl = false, estNo = "" }) {
   const today = new Date();
   const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}`;
   const finishName = FINISH_OPTIONS.find((f) => f.id === finish)?.name || finish;
   const surfName = SURFACE_OPTIONS.find((s) => s.id === surf)?.name || surf;
   const clearName = CLEAR_OPTIONS.find((c) => c.id === clearType)?.name || clearType;
+  const tx = taxIncl ? 1.1 : 1;
+  const fT = (v) => fmt(Math.round(v * tx));
+  const labor = parseFloat(laborCost) || 0;
+  const totalWithLabor = grand + labor;
 
   const matRows = workflow.map((k) => {
     const mat = MATERIALS[k];
@@ -683,14 +702,20 @@ function printEstimate({ projectName, sqm, finish, surf, clearType, workflow, au
 </style>
 </head>
 <body>
-<h1>CimentArt 材料費見積</h1>
-<p class="sub">Cement Artist Nu☆Man（株式会社KENSIN） — ${today.toLocaleDateString("ja-JP")}</p>
+<div style="display:flex;justify-content:space-between;align-items:flex-start">
+  <div>
+    <h1>CimentArt 材料費見積</h1>
+    <p class="sub">Cement Artist Nu☆Man（株式会社KENSIN） — ${today.toLocaleDateString("ja-JP")}</p>
+  </div>
+  ${estNo ? `<div style="font-size:11px;color:#999;text-align:right;margin-top:4px">見積番号<br><strong style="font-size:13px;color:#8b7355">${estNo}</strong></div>` : ""}
+</div>
 
 <div class="info-grid">
   <div class="info-box"><div class="label">現場名</div><div class="value" style="font-size:14px">${projectName || "—"}</div></div>
   <div class="info-box"><div class="label">施工面積</div><div class="value">${sqm}㎡</div></div>
-  <div class="info-box"><div class="label">㎡単価</div><div class="value accent">${fmt(uPrice)}/㎡</div></div>
+  <div class="info-box"><div class="label">㎡単価（材料費）</div><div class="value accent">${fT(uPrice)}/㎡</div></div>
 </div>
+${memo ? `<div style="background:#f7f6f4;border-left:3px solid #8b7355;padding:8px 12px;font-size:11px;color:#555;margin-bottom:16px;border-radius:0 4px 4px 0"><strong>現場メモ：</strong>${memo}</div>` : ""}
 
 <div class="section-title">施工条件</div>
 <table style="margin-bottom:12px">
@@ -716,15 +741,16 @@ ${pigRows ? `<div class="section-title">顔料</div>
 </table>` : ""}
 
 <div class="total-box">
-  <div class="total-row"><span>材料費</span><span>${fmt(matTotal)}</span></div>
-  ${pigTotal > 0 ? `<div class="total-row"><span>顔料</span><span>${fmt(pigTotal)}</span></div>` : ""}
+  <div class="total-row"><span>材料費</span><span>${fT(matTotal)}</span></div>
+  ${pigTotal > 0 ? `<div class="total-row"><span>顔料</span><span>${fT(pigTotal)}</span></div>` : ""}
+  ${labor > 0 ? `<div class="total-row"><span>施工費・諸経費</span><span>${fT(labor)}</span></div>` : ""}
   <div class="total-row" style="border-top:1px solid #c9a96e;padding-top:10px;margin-top:6px;font-weight:800">
-    <span>合計（税抜）</span><span class="grand">${fmt(grand)}</span>
+    <span>合計${taxIncl ? "（税込10%）" : "（税抜）"}</span><span class="grand">${fT(totalWithLabor)}</span>
   </div>
-  <div style="text-align:right;font-size:11px;color:#8b7355;margin-top:4px">㎡単価 ${fmt(uPrice)}/㎡</div>
+  <div style="text-align:right;font-size:11px;color:#8b7355;margin-top:4px">㎡単価 ${fT(labor > 0 ? Math.round(totalWithLabor / sqm) : uPrice)}/㎡${labor > 0 ? "（施工込）" : ""}</div>
 </div>
 
-<div class="footer">※本見積は材料費のみ。施工費・消費税は含みません。数量は自動最適化による概算です。</div>
+<div class="footer">※数量は自動最適化による概算です。${!taxIncl ? "消費税は含みません。" : ""}本見積の有効期限は発行日より30日間です。</div>
 </body>
 </html>`;
 
@@ -746,20 +772,33 @@ function writeSaved(list) {
   localStorage.setItem(LS_KEY, JSON.stringify(list));
 }
 
-function saveToLocal({ projectName, area, surface, finish, clearType, pigments, manual, grand, uPrice, sqm }) {
+function genEstNo() {
+  const now = new Date();
+  const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}`;
+  const seqKey = `cimentart_seq_${d}`;
+  const seq = parseInt(localStorage.getItem(seqKey) || "0") + 1;
+  localStorage.setItem(seqKey, String(seq));
+  return `EST-${d}-${String(seq).padStart(3, "0")}`;
+}
+
+function saveToLocal({ projectName, area, surface, finish, clearType, pigments, manual, grand, uPrice, sqm, memo }) {
   const list = loadSaved();
   const now = new Date();
   const key = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}_${projectName || "unnamed"}`;
-  const entry = { key, projectName, area, surface, finish, clearType, pigments, manual, grand, uPrice, sqm, savedAt: now.toLocaleString("ja-JP") };
+  const existing = list.find((e) => e.key === key);
+  const estNo = existing?.estNo || genEstNo();
+  const entry = { key, estNo, projectName, area, surface, finish, clearType, pigments, manual, grand, uPrice, sqm, memo: memo || "", savedAt: now.toLocaleString("ja-JP") };
   const idx = list.findIndex((e) => e.key === key);
   if (idx >= 0) list[idx] = entry; else list.unshift(entry);
   writeSaved(list.slice(0, 30));
-  return list;
+  return estNo;
 }
 
 /* ━━━ SavedPanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function SavedPanel({ open, onClose, onRestore }) {
   const [list, setList] = useState([]);
+  const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState("date"); // "date" | "amount" | "area"
   useEffect(() => { if (open) setList(loadSaved()); }, [open]);
   if (!open) return null;
 
@@ -769,29 +808,60 @@ function SavedPanel({ open, onClose, onRestore }) {
     setList(next);
   };
 
+  const filtered = list
+    .filter((e) => {
+      if (!query) return true;
+      const q = query.toLowerCase();
+      return (e.projectName || "").toLowerCase().includes(q) ||
+        (e.estNo || "").toLowerCase().includes(q) ||
+        (FINISH_OPTIONS.find((f) => f.id === e.finish)?.name || "").includes(q);
+    })
+    .slice()
+    .sort((a, b) => {
+      if (sortBy === "amount") return b.grand - a.grand;
+      if (sortBy === "area")   return b.sqm - a.sqm;
+      return 0; // "date" = already in save order
+    });
+
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+    <div className="ca-backdrop" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
       <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 24px 14px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.white, zIndex: 1 }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>保存済み見積</h2>
-          <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", background: C.borderLt, fontSize: 14, cursor: "pointer", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        <div style={{ padding: "8px 20px 12px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.white, zIndex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>保存済み見積 <span style={{ fontSize: 12, fontWeight: 400, color: C.muted }}>（{list.length}件）</span></h2>
+            <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", background: C.borderLt, fontSize: 14, cursor: "pointer", color: C.sub }}>✕</button>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="現場名・見積番号・仕上げ材で検索"
+              style={{ flex: 1, padding: "7px 10px", borderRadius: 4, border: `1px solid ${C.border}`, fontSize: 12, outline: "none" }}
+              onFocus={(e) => (e.target.style.borderColor = C.accent)} onBlur={(e) => (e.target.style.borderColor = C.border)} />
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+              style={{ padding: "7px 10px", borderRadius: 4, border: `1px solid ${C.border}`, fontSize: 12, cursor: "pointer", color: C.sub }}>
+              <option value="date">新しい順</option>
+              <option value="amount">金額順</option>
+              <option value="area">面積順</option>
+            </select>
+          </div>
         </div>
         <div style={{ padding: "12px 20px 24px" }}>
-          {list.length === 0 ? (
-            <div style={{ textAlign: "center", color: C.muted, padding: "32px 0", fontSize: 13 }}>保存済みの見積はありません</div>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: "center", color: C.muted, padding: "32px 0", fontSize: 13 }}>
+              {list.length === 0 ? "保存済みの見積はありません" : "検索結果がありません"}
+            </div>
           ) : (
-            list.map((entry) => {
+            filtered.map((entry) => {
               const finishName = FINISH_OPTIONS.find((f) => f.id === entry.finish)?.name || entry.finish;
               return (
                 <div key={entry.key} style={{ border: `1px solid ${C.border}`, borderRadius: 4, padding: "12px 14px", marginBottom: 8, background: C.bg }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{entry.projectName || "（現場名なし）"}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{entry.savedAt} ／ {finishName} ／ {entry.sqm}㎡</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{entry.savedAt} ／ {finishName} ／ {entry.sqm}㎡{entry.estNo && <span style={{ marginLeft: 6, background: C.accentLt, color: C.accentDk, borderRadius: 3, padding: "1px 5px", fontWeight: 700 }}>{entry.estNo}</span>}</div>
                       <div style={{ fontSize: 14, fontWeight: 800, color: C.accent, marginTop: 4 }}>{fmt(entry.grand)} <span style={{ fontSize: 11, fontWeight: 600, color: C.muted }}>（{fmt(entry.uPrice)}/㎡）</span></div>
+                      {entry.memo && <div style={{ fontSize: 11, color: C.sub, marginTop: 3, fontStyle: "italic" }}>📝 {entry.memo}</div>}
                     </div>
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                       <button onClick={() => { onRestore(entry); onClose(); }} style={{
@@ -814,6 +884,194 @@ function SavedPanel({ open, onClose, onRestore }) {
   );
 }
 
+/* ━━━ OrderListPanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function OrderListPanel({ open, onClose, workflow, autoSel, manual, pigments, sqm, projectName }) {
+  if (!open) return null;
+
+  // 材料ごとに集計
+  const matItems = workflow.flatMap((k) => {
+    const mat = MATERIALS[k];
+    return calcLineItems(k, manual[k] || autoSel[k] || []).map((item) => ({
+      category: mat?.name || k,
+      label: item.label,
+      qty: item.qty,
+      unit: "個",
+      price: item.price,
+      subtotal: item.subtotal,
+    }));
+  });
+
+  const pigItems = pigments.map((sp) => {
+    const p = PIGMENTS.find((x) => x.id === sp.id);
+    if (!p) return null;
+    const sz = p.sizes[sp.sizeIdx];
+    return { category: "顔料", label: `${p.name} ${sz.label}`, qty: sp.qty, unit: "個", price: sz.price, subtotal: sz.price * sp.qty };
+  }).filter(Boolean);
+
+  const allItems = [...matItems, ...pigItems];
+  const total = allItems.reduce((s, i) => s + i.subtotal, 0);
+
+  const printOrder = () => {
+    const today = new Date();
+    const rows = allItems.map((i) =>
+      `<tr><td>${i.category}</td><td>${i.label}</td><td style="text-align:right">${i.qty}${i.unit}</td><td style="text-align:right">${fmt(i.price)}</td><td style="text-align:right">${fmt(i.subtotal)}</td><td style="width:80px;border-bottom:1px solid #ccc">&nbsp;</td></tr>`
+    ).join("");
+    const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>発注リスト</title>
+<style>body{font-family:"Noto Sans JP",sans-serif;padding:20px;font-size:12px}h2{font-size:16px;color:#8b7355;margin:0 0 4px}
+table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#f7f6f4;padding:7px 10px;font-size:11px;color:#999;border-bottom:2px solid #ddd;text-align:left}
+td{padding:7px 10px;border-bottom:1px solid #f0eeea}@media print{body{padding:8px}}</style></head>
+<body><h2>発注リスト — ${projectName || "（現場名未設定）"}</h2>
+<p style="font-size:11px;color:#999;margin:0 0 12px">${today.toLocaleDateString("ja-JP")} ／ 施工面積 ${sqm}㎡</p>
+<table><thead><tr><th>材料種別</th><th>品名・サイズ</th><th style="text-align:right">数量</th><th style="text-align:right">単価</th><th style="text-align:right">小計</th><th>確認</th></tr></thead>
+<tbody>${rows}</tbody></table>
+<div style="margin-top:16px;text-align:right;font-size:14px;font-weight:800;color:#8b7355">合計（税抜）：${fmt(total)}</div>
+</body></html>`;
+    const w = window.open("", "_blank");
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 400);
+  };
+
+  return (
+    <div className="ca-backdrop" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
+        </div>
+        <div style={{ padding: "14px 20px 24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>発注リスト</h2>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={printOrder} style={{ padding: "7px 14px", borderRadius: 4, border: `1.5px solid ${C.accent}`, background: C.accent, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>印刷</button>
+              <button onClick={onClose} style={{ padding: "7px 12px", borderRadius: 4, border: `1px solid ${C.border}`, background: C.white, color: C.sub, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>閉じる</button>
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 14 }}>施工面積 {sqm}㎡ の発注目安。各列を確認チェックとしてお使いください。</div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: C.bg }}>
+                {["材料種別", "品名・サイズ", "数量", "単価", "小計"].map((h, i) => (
+                  <th key={h} style={{ padding: "7px 10px", fontWeight: 600, fontSize: 11, color: C.sub, borderBottom: `2px solid ${C.border}`, textAlign: i >= 2 ? "right" : "left" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {allItems.map((item, i) => (
+                <tr key={i} style={{ borderBottom: `1px solid ${C.borderLt}`, background: i % 2 === 0 ? C.white : C.bg }}>
+                  <td style={{ padding: "8px 10px", fontSize: 11, color: C.muted, fontWeight: 600 }}>{item.category}</td>
+                  <td style={{ padding: "8px 10px", fontWeight: 600 }}>{item.label}</td>
+                  <td style={{ padding: "8px 10px", textAlign: "right", fontWeight: 700 }}>{item.qty}{item.unit}</td>
+                  <td style={{ padding: "8px 10px", textAlign: "right", color: C.muted }}>{fmt(item.price)}</td>
+                  <td style={{ padding: "8px 10px", textAlign: "right", fontWeight: 700, color: C.accentDk }}>{fmt(item.subtotal)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ textAlign: "right", marginTop: 14, fontSize: 15, fontWeight: 800, color: C.accent }}>合計（税抜）：{fmt(total)}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ━━━ ComparePanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function ComparePanel({ open, onClose, sqm, surf, clearType }) {
+  const [finA, setFinA] = useState("aquaQuartz");
+  const [finB, setFinB] = useState("aquaMicro");
+  if (!open) return null;
+
+  const calcCost = (fin) => {
+    if (sqm <= 0) return null;
+    const wf = getWorkflow(fin, surf, clearType);
+    const sel = {};
+    wf.forEach((k) => { sel[k] = autoOptimize(k, sqm); });
+    if (sel.resin && sel.concBase) {
+      const q = sel.concBase.reduce((s, i) => s + i.qty, 0);
+      sel.resin = [{ sizeIdx: 0, qty: q }];
+    }
+    const total = wf.reduce((s, k) => s + calcLineItems(k, sel[k] || []).reduce((a, i) => a + i.subtotal, 0), 0);
+    const uPrice = Math.round(total / sqm);
+    return { total, uPrice, wf, sel };
+  };
+
+  const resA = calcCost(finA);
+  const resB = calcCost(finB);
+
+  const ColHeader = ({ fin, setFin }) => (
+    <div style={{ flex: 1 }}>
+      <select value={fin} onChange={(e) => setFin(e.target.value)}
+        style={{ width: "100%", padding: "8px 10px", borderRadius: 4, border: `1.5px solid ${C.accent}`, fontSize: 13, fontWeight: 700, color: C.accentDk, background: C.accentLt, cursor: "pointer" }}>
+        {FINISH_OPTIONS.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+      </select>
+    </div>
+  );
+
+  const CostCard = ({ res, fin }) => {
+    if (!res) return <div style={{ flex: 1, textAlign: "center", color: C.muted, fontSize: 12, padding: 20 }}>面積を入力してください</div>;
+    const finDef = FINISH_OPTIONS.find((f) => f.id === fin);
+    return (
+      <div style={{ flex: 1 }}>
+        <div style={{ background: C.dark, borderRadius: 4, padding: "14px 16px", marginBottom: 10 }}>
+          <div style={{ fontSize: 11, color: "#999", marginBottom: 2 }}>材料費合計</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.gold }}>{fmt(res.total)}</div>
+          <div style={{ fontSize: 11, color: "#999", marginTop: 4 }}>㎡単価 {fmt(res.uPrice)}/㎡</div>
+        </div>
+        <div style={{ fontSize: 11, color: C.muted, marginBottom: 8, lineHeight: 1.5 }}>{finDef?.desc}</div>
+        {res.wf.map((k) => {
+          const items = calcLineItems(k, res.sel[k] || []);
+          const cost = items.reduce((s, i) => s + i.subtotal, 0);
+          return (
+            <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${C.borderLt}`, fontSize: 12 }}>
+              <span style={{ color: C.text, fontWeight: 600 }}>{MATERIALS[k]?.name || k}</span>
+              <span style={{ color: C.muted }}>{fmt(cost)}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const diff = resA && resB ? resA.total - resB.total : null;
+
+  return (
+    <div className="ca-backdrop" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 900, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px", flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
+        </div>
+        <div style={{ padding: "14px 20px 4px", flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>仕上げ材コスト比較</h2>
+          <button onClick={onClose} style={{ padding: "7px 12px", borderRadius: 4, border: `1px solid ${C.border}`, background: C.white, color: C.sub, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>閉じる</button>
+        </div>
+        {sqm <= 0 && <div style={{ padding: "10px 20px", fontSize: 12, color: C.ng }}>※ 施工面積を先に入力してください</div>}
+        <div style={{ overflowY: "auto", padding: "12px 20px 24px" }}>
+          <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+            <ColHeader fin={finA} setFin={setFinA} />
+            <div style={{ width: 28, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: C.muted, fontWeight: 700 }}>vs</div>
+            <ColHeader fin={finB} setFin={setFinB} />
+          </div>
+          {diff !== null && (
+            <div style={{ textAlign: "center", padding: "8px", borderRadius: 4, marginBottom: 14, fontSize: 12, fontWeight: 700,
+              background: diff === 0 ? C.bg : diff > 0 ? "#fff3f3" : "#f0fff0",
+              color: diff === 0 ? C.sub : diff > 0 ? C.ng : "#2d7a2d",
+              border: `1px solid ${diff === 0 ? C.border : diff > 0 ? "#f8c0c0" : "#b2e0b2"}`,
+            }}>
+              {diff === 0 ? "コストは同じです" : `左が ${fmt(Math.abs(diff))} ${diff > 0 ? "高い" : "安い"}`}
+              {sqm > 0 && diff !== 0 && <span style={{ marginLeft: 8, fontWeight: 400, opacity: 0.8 }}>（㎡単価差 {fmt(Math.round(Math.abs(diff) / sqm))}/㎡）</span>}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 12 }}>
+            <CostCard res={resA} fin={finA} />
+            <div style={{ width: 1, background: C.border, flexShrink: 0 }} />
+            <CostCard res={resB} fin={finB} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ━━━ ReferencePanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function ReferencePanel({ open, onClose }) {
   if (!open) return null;
@@ -827,7 +1085,7 @@ function ReferencePanel({ open, onClose }) {
   ];
   const th = { padding: "7px 10px", fontWeight: 600, fontSize: 11, color: C.muted, borderBottom: `2px solid ${C.border}`, letterSpacing: ".3px" };
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+    <div className="ca-backdrop" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
       <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
@@ -897,7 +1155,7 @@ function QuickTablePanel({ open, onClose, activeFinish }) {
   if (!open) return null;
   const th = { padding: "7px 10px", fontWeight: 600, fontSize: 11, color: C.muted, borderBottom: `2px solid ${C.border}`, letterSpacing: ".3px" };
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+    <div className="ca-backdrop" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
       <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
@@ -962,7 +1220,7 @@ function ColorFormulaPanel({ open, onClose, activeFinish }) {
   );
   const th = { padding: "5px 7px", fontWeight: 600, fontSize: 10, color: C.muted, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap", letterSpacing: ".2px" };
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+    <div className="ca-backdrop" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
       <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 900, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px", flexShrink: 0 }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
@@ -1034,10 +1292,20 @@ export default function App() {
   const [pigments, setPigments] = useState([]);
   const [manual, setManual] = useState({});
   const [done, setDone] = useState(false);
+  const [calc, setCalc] = useState(false);
+  const [taxIncl, setTaxIncl] = useState(false);
+  const [laborCost, setLaborCost] = useState("");
+  const [showLabor, setShowLabor] = useState(false);
+  const [copyMsg, setCopyMsg] = useState("");
+  const [memo, setMemo] = useState("");
+  const [showDim, setShowDim] = useState(false);
+  const [dimSpaces, setDimSpaces] = useState([{ name: "", l: "", w: "" }]);
   const [showRef, setShowRef] = useState(false);
   const [showQuick, setShowQuick] = useState(false);
   const [showColor, setShowColor] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  const [showOrder, setShowOrder] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
 
   const sqm = parseFloat(area) || 0;
@@ -1060,6 +1328,65 @@ export default function App() {
     setManual((p) => { const n = { ...p }; if (v === null) delete n[k]; else n[k] = v; return n; });
   }, []);
 
+  const dimTotal = dimSpaces.reduce((s, sp) => {
+    const v = parseFloat(sp.l) * parseFloat(sp.w);
+    return s + (isNaN(v) ? 0 : v);
+  }, 0);
+  const updateDimSpace = (i, field, val) =>
+    setDimSpaces((prev) => prev.map((sp, idx) => idx === i ? { ...sp, [field]: val } : sp));
+  const addDimSpace    = () => setDimSpaces((prev) => [...prev, { name: "", l: "", w: "" }]);
+  const removeDimSpace = (i) => setDimSpaces((prev) => prev.filter((_, idx) => idx !== i));
+  const applyDim = () => {
+    if (dimTotal > 0) { setArea(String(Math.round(dimTotal * 10) / 10)); setDone(false); }
+  };
+
+  const copyToClipboard = () => {
+    const finName  = FINISH_OPTIONS.find((f) => f.id === finish)?.name || finish;
+    const surfName = SURFACE_OPTIONS.find((s) => s.id === surf)?.name || surf;
+    const clrName  = CLEAR_OPTIONS.find((c) => c.id === clearType)?.name || clearType;
+    const txR = taxIncl ? 1.1 : 1;
+    const fT  = (v) => fmt(Math.round(v * txR));
+    const labor = parseFloat(laborCost) || 0;
+    const lines = [
+      "【CimentArt 材料費見積】",
+      `現場名  ：${projectName || "（未設定）"}`,
+      ...(memo ? [`メモ    ：${memo}`] : []),
+      `仕上げ  ：${finName} / ${surfName} / クリア${clrName}`,
+      `施工面積：${sqm}㎡`,
+      "",
+      "■ 材料明細",
+      ...workflow.flatMap((k) =>
+        calcLineItems(k, manual[k] || autoSel[k] || []).map(
+          (i) => `  ${MATERIALS[k]?.name}: ${i.label} × ${i.qty}個 = ${fmt(i.subtotal)}`
+        )
+      ),
+      ...(pigments.length > 0 ? [
+        "",
+        "  【顔料】",
+        ...pigments.map((sp) => {
+          const p = PIGMENTS.find((x) => x.id === sp.id);
+          return p ? `  ${p.name} ${p.sizes[sp.sizeIdx].label} × ${sp.qty}個 = ${fmt(p.sizes[sp.sizeIdx].price * sp.qty)}` : "";
+        }).filter(Boolean),
+      ] : []),
+      "",
+      "■ 合計",
+      `  材料費 ：${fmt(matTotal)}`,
+      ...(pigTotal > 0 ? [`  顔料   ：${fmt(pigTotal)}`] : []),
+      `  小計（税抜）：${fmt(grand)}`,
+      ...(taxIncl ? [`  小計（税込）：${fT(grand)}`] : []),
+      ...(labor > 0 ? [
+        `  施工費 ：${fmt(labor)}`,
+        `  合計見積（税抜）：${fmt(grand + labor)}`,
+        ...(taxIncl ? [`  合計見積（税込）：${fT(grand + labor)}`] : []),
+      ] : []),
+      `  ㎡単価 ：${fT(labor > 0 ? Math.round((grand + labor) / sqm) : uPrice)}/㎡`,
+    ];
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setCopyMsg("コピーしました！");
+      setTimeout(() => setCopyMsg(""), 2500);
+    });
+  };
+
   const matTotal = useMemo(() => {
     if (!done) return 0;
     return workflow.reduce((s, k) => s + calcLineItems(k, manual[k] || autoSel[k] || []).reduce((a, i) => a + i.subtotal, 0), 0);
@@ -1068,6 +1395,19 @@ export default function App() {
   const pigTotal = pigments.reduce((s, sp) => { const p = PIGMENTS.find((x) => x.id === sp.id); return s + (p ? p.sizes[sp.sizeIdx].price * sp.qty : 0); }, 0);
   const grand = matTotal + pigTotal;
   const uPrice = sqm > 0 ? Math.round(grand / sqm) : 0;
+  const tx = taxIncl ? 1.1 : 1;
+  const fmtT = (v) => fmt(Math.round(v * tx));
+
+  const breakdown = useMemo(() => {
+    if (!done || grand === 0) return [];
+    const items = [];
+    workflow.forEach((k) => {
+      const cost = calcLineItems(k, manual[k] || autoSel[k] || []).reduce((a, i) => a + i.subtotal, 0);
+      if (cost > 0) items.push({ key: k, name: MATERIALS[k]?.name || k, cost, pct: Math.round(cost / grand * 100) });
+    });
+    if (pigTotal > 0) items.push({ key: "pigment", name: "顔料", cost: pigTotal, pct: Math.round(pigTotal / grand * 100) });
+    return items.sort((a, b) => b.cost - a.cost);
+  }, [done, grand, workflow, autoSel, manual, pigTotal]);
 
   const inp = { width: "100%", padding: "10px 12px", borderRadius: 4, border: `1px solid ${C.border}`, fontSize: 15, boxSizing: "border-box", outline: "none", color: C.text, background: C.white };
   const btn = (a) => ({
@@ -1129,6 +1469,73 @@ export default function App() {
             <input type="number" value={area} onChange={(e) => { setArea(e.target.value); setDone(false); }}
               placeholder="例：30" min="0.1" step="0.1" style={inp}
               onFocus={(e) => (e.target.style.borderColor = C.accent)} onBlur={(e) => (e.target.style.borderColor = C.border)} />
+            <div style={{ display: "flex", gap: 5, marginTop: 6, flexWrap: "wrap" }}>
+              {[5, 10, 15, 20, 30, 50].map((v) => {
+                const active = area === String(v);
+                return (
+                  <button key={v} onClick={() => { setArea(String(v)); setDone(false); }}
+                    style={{
+                      padding: "3px 10px", borderRadius: 3, fontSize: 11, fontWeight: 700,
+                      border: active ? `1.5px solid ${C.accent}` : `1px solid ${C.border}`,
+                      background: active ? C.accentLt : C.white,
+                      color: active ? C.accentDk : C.sub, cursor: "pointer",
+                      transition: "all 0.12s",
+                    }}>{v}㎡</button>
+                );
+              })}
+            </div>
+
+            {/* 寸法計算ツール */}
+            <div style={{ marginTop: 8 }}>
+              <button onClick={() => setShowDim((v) => !v)} style={{
+                fontSize: 11, fontWeight: 700, color: C.accent, background: "none", border: "none",
+                cursor: "pointer", padding: "2px 0", textDecoration: "underline",
+              }}>{showDim ? "▲ 寸法入力を閉じる" : "▸ 寸法から面積を計算する（複数スペース対応）"}</button>
+              {showDim && (
+                <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 4, border: `1px solid ${C.border}`, background: C.bg }}>
+                  {dimSpaces.map((sp, i) => {
+                    const area_ = parseFloat(sp.l) * parseFloat(sp.w);
+                    const areaStr = !isNaN(area_) && sp.l && sp.w ? `${Math.round(area_ * 10) / 10}㎡` : "—";
+                    return (
+                      <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 7, flexWrap: "wrap" }}>
+                        <input placeholder={`スペース${i + 1}（任意）`} value={sp.name}
+                          onChange={(e) => updateDimSpace(i, "name", e.target.value)}
+                          style={{ flex: "2 1 80px", padding: "7px 9px", borderRadius: 3, border: `1px solid ${C.border}`, fontSize: 12, minWidth: 0 }} />
+                        <input type="number" placeholder="縦(m)" value={sp.l} min="0" step="0.1"
+                          onChange={(e) => updateDimSpace(i, "l", e.target.value)}
+                          style={{ flex: "1 1 54px", padding: "7px 8px", borderRadius: 3, border: `1px solid ${C.border}`, fontSize: 12, minWidth: 0 }} />
+                        <span style={{ color: C.muted, fontWeight: 700, fontSize: 13 }}>×</span>
+                        <input type="number" placeholder="横(m)" value={sp.w} min="0" step="0.1"
+                          onChange={(e) => updateDimSpace(i, "w", e.target.value)}
+                          style={{ flex: "1 1 54px", padding: "7px 8px", borderRadius: 3, border: `1px solid ${C.border}`, fontSize: 12, minWidth: 0 }} />
+                        <span style={{ fontSize: 12, color: C.accentDk, fontWeight: 700, minWidth: 44 }}>{areaStr}</span>
+                        {dimSpaces.length > 1 && (
+                          <button onClick={() => removeDimSpace(i)} style={{
+                            padding: "4px 8px", borderRadius: 3, border: `1px solid ${C.border}`,
+                            background: C.white, color: C.ng, fontSize: 11, cursor: "pointer",
+                          }}>✕</button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+                    <button onClick={addDimSpace} style={{
+                      padding: "5px 12px", borderRadius: 3, border: `1px solid ${C.border}`,
+                      background: C.white, color: C.sub, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                    }}>+ スペースを追加</button>
+                    {dimTotal > 0 && (
+                      <>
+                        <span style={{ fontSize: 12, color: C.sub }}>合計 <strong style={{ color: C.accentDk }}>{Math.round(dimTotal * 10) / 10}㎡</strong></span>
+                        <button onClick={applyDim} style={{
+                          padding: "5px 14px", borderRadius: 3, border: `1.5px solid ${C.accent}`,
+                          background: C.accentLt, color: C.accentDk, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                        }}>この面積（{Math.round(dimTotal * 10) / 10}㎡）を使う</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{ marginBottom: 14 }}>
@@ -1154,25 +1561,43 @@ export default function App() {
                 </button>
               ))}
             </div>
+            {fDef?.desc && (
+              <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 3, background: C.accentLt, border: `1px solid #e2d8cc`, fontSize: 11, color: C.accentDk, lineHeight: 1.6 }}>
+                {fDef.desc}
+              </div>
+            )}
           </div>
 
-          <div>
+          <div style={{ marginBottom: 14 }}>
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.muted, marginBottom: 5 }}>クリア仕上げ</label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {CLEAR_OPTIONS.map((o) => <button key={o.id} onClick={() => { setClearType(o.id); setDone(false); }} style={btn(clearType === o.id)}>{o.name}</button>)}
             </div>
           </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.muted, marginBottom: 3 }}>現場メモ（任意）</label>
+            <textarea value={memo} onChange={(e) => setMemo(e.target.value)}
+              placeholder="注意事項・下地状況・特記事項など"
+              rows={2}
+              style={{ ...inp, resize: "vertical", lineHeight: 1.5, fontFamily: "inherit" }}
+              onFocus={(e) => (e.target.style.borderColor = C.accent)}
+              onBlur={(e) => (e.target.style.borderColor = C.border)} />
+          </div>
         </div>
 
         {/* Workflow */}
         <div style={{ background: C.white, borderRadius: 4, padding: "11px 16px", marginBottom: 14, border: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: C.muted, marginBottom: 6 }}>施工手順（{workflow.length}工程）</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.muted, marginBottom: 6 }}>施工手順（{workflow.length}工程）<span style={{ fontWeight: 400, marginLeft: 6 }}>— ステップにカーソルを合わせると詳細を表示</span></div>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
             {workflow.map((key, i) => {
               const m = MATERIALS[key];
+              const qt = QUICK_TABLE.find((q) => q.keys.includes(key));
+              const tip = qt ? `塗布量: ${qt.application} ／ 乾燥: ${qt.dryTime}` : null;
               return (
                 <span key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 3, fontSize: 11, fontWeight: 600, background: C.accentLt, color: C.accentDk, whiteSpace: "nowrap" }}>
+                  <span title={tip || undefined}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 3, fontSize: 11, fontWeight: 600, background: C.accentLt, color: C.accentDk, whiteSpace: "nowrap", cursor: tip ? "help" : "default", borderBottom: tip ? `1px dashed ${C.accent}` : "none" }}>
                     {m?.name || key}
                     {m?.coats === 2 && <span style={{ fontSize: 9, padding: "1px 4px", borderRadius: 2, background: C.accent, color: "#fff", fontWeight: 700 }}>×2</span>}
                   </span>
@@ -1184,20 +1609,34 @@ export default function App() {
         </div>
 
         {/* Calc button */}
-        <button onClick={() => { setManual({}); setDone(true); }} disabled={sqm <= 0}
-          className="ca-btn-primary"
+        <button onClick={() => {
+            if (sqm <= 0) return;
+            setCalc(true);
+            setTimeout(() => { setManual({}); setDone(true); setCalc(false); }, 420);
+          }} disabled={sqm <= 0 || calc}
+          className={`ca-btn-primary${calc ? " ca-btn-loading" : ""}`}
           style={{
             width: "100%", padding: "13px", borderRadius: 4, border: "none",
             background: sqm > 0 ? C.accent : C.border, color: "#fff", fontSize: 15, fontWeight: 700,
             cursor: sqm > 0 ? "pointer" : "default", marginBottom: 18,
             boxShadow: sqm > 0 ? "0 2px 8px rgba(139,115,85,.2)" : "none",
-          }}>{done ? "再計算する" : "材料費を算出する"}</button>
+          }}>{calc ? "計算中…" : done ? "再計算する" : "材料費を算出する"}</button>
 
         {/* Results */}
         {done && sqm > 0 && (
           <div className="ca-result">
+            {/* 税表示トグル */}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+              <button onClick={() => setTaxIncl((v) => !v)} style={{
+                padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                border: `1.5px solid ${taxIncl ? C.accent : C.border}`,
+                background: taxIncl ? C.accentLt : C.white,
+                color: taxIncl ? C.accentDk : C.sub,
+                transition: "all 0.15s",
+              }}>{taxIncl ? "税込（10%）表示中" : "税抜表示中"}</button>
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
-              {[{ l: "材料費合計", v: fmt(grand), h: true }, { l: "㎡単価", v: `${fmt(uPrice)}/㎡` }, { l: "施工面積", v: `${sqm}㎡` }].map((c) => (
+              {[{ l: "材料費合計", v: fmtT(grand), h: true }, { l: "㎡単価", v: `${fmtT(uPrice)}/㎡` }, { l: "施工面積", v: `${sqm}㎡` }].map((c) => (
                 <div key={c.l} className="ca-summary-card" style={{ background: C.dark, borderRadius: 4, padding: "13px 10px", textAlign: "center" }}>
                   <div style={{ fontSize: 10, color: "#999", marginBottom: 3, fontWeight: 600 }}>{c.l}</div>
                   <div style={{ fontSize: c.h ? 18 : 16, fontWeight: 800, color: c.h ? C.gold : "#fff" }}>{c.v}</div>
@@ -1213,8 +1652,8 @@ export default function App() {
               材料明細{projectName && ` — ${projectName}`}
             </h3>
 
-            {workflow.map((k) => (
-              <MaterialCard key={k} materialKey={k} autoSel={autoSel[k] || []} manualSel={manual[k] || null} onManualChange={handleManual} area={sqm} />
+            {workflow.map((k, idx) => (
+              <MaterialCard key={k} materialKey={k} index={idx} autoSel={autoSel[k] || []} manualSel={manual[k] || null} onManualChange={handleManual} area={sqm} />
             ))}
 
             <PigmentSelector pigs={pigments} onChange={setPigments} />
@@ -1222,33 +1661,98 @@ export default function App() {
             <div style={{ background: C.dark, borderRadius: 4, padding: 20, marginTop: 8, border: `2px solid ${C.accent}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                 <span style={{ color: "#999", fontSize: 13, fontWeight: 600 }}>材料費</span>
-                <span style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>{fmt(matTotal)}</span>
+                <span style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>{fmtT(matTotal)}</span>
               </div>
               {pigTotal > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                   <span style={{ color: "#999", fontSize: 13, fontWeight: 600 }}>顔料</span>
-                  <span style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>{fmt(pigTotal)}</span>
+                  <span style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>{fmtT(pigTotal)}</span>
                 </div>
               )}
               <div style={{ borderTop: "1px solid #555", paddingTop: 12, marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "#fff", fontSize: 15, fontWeight: 800 }}>合計</span>
-                <span style={{ color: C.gold, fontSize: 24, fontWeight: 800 }}>{fmt(grand)}</span>
+                <span style={{ color: "#fff", fontSize: 15, fontWeight: 800 }}>合計{taxIncl ? "（税込）" : "（税抜）"}</span>
+                <span style={{ color: C.gold, fontSize: 24, fontWeight: 800 }}>{fmtT(grand)}</span>
               </div>
               <div style={{ textAlign: "right", marginTop: 4 }}>
-                <span style={{ color: "#999", fontSize: 12 }}>㎡単価 {fmt(uPrice)}/㎡</span>
+                <span style={{ color: "#999", fontSize: 12 }}>㎡単価 {fmtT(uPrice)}/㎡</span>
               </div>
             </div>
 
+            {/* 施工費加算 */}
+            <div style={{ marginTop: 10 }}>
+              <button onClick={() => setShowLabor((v) => !v)} style={{
+                width: "100%", padding: "9px 14px", borderRadius: 4, textAlign: "left",
+                border: `1px solid ${C.border}`, background: C.white, color: C.sub,
+                fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", justifyContent: "space-between",
+              }}>
+                <span>施工費・諸経費を追加する</span>
+                <span>{showLabor ? "▲" : "▼"}</span>
+              </button>
+              {showLabor && (
+                <div style={{ border: `1px solid ${C.border}`, borderTop: "none", borderRadius: "0 0 4px 4px", padding: "14px 16px", background: C.white }}>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.muted, marginBottom: 4 }}>施工費・人件費・諸経費（円・税抜）</label>
+                  <input type="number" value={laborCost} onChange={(e) => setLaborCost(e.target.value)}
+                    placeholder="例：80000" min="0" step="1000"
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: 4, border: `1px solid ${C.border}`, fontSize: 14, boxSizing: "border-box", outline: "none", color: C.text }}
+                    onFocus={(e) => (e.target.style.borderColor = C.accent)}
+                    onBlur={(e) => (e.target.style.borderColor = C.border)} />
+                  {parseFloat(laborCost) > 0 && (() => {
+                    const labor = parseFloat(laborCost);
+                    const total = grand + labor;
+                    const txR = taxIncl ? 1.1 : 1;
+                    const fT = (v) => fmt(Math.round(v * txR));
+                    return (
+                      <div style={{ background: C.dark, borderRadius: 4, padding: "14px 16px", marginTop: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                          <span style={{ color: "#999", fontSize: 12 }}>材料費</span>
+                          <span style={{ color: "#fff", fontSize: 13 }}>{fT(grand)}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span style={{ color: "#999", fontSize: 12 }}>施工費</span>
+                          <span style={{ color: "#fff", fontSize: 13 }}>{fT(labor)}</span>
+                        </div>
+                        <div style={{ borderTop: "1px solid #555", paddingTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>総見積{taxIncl ? "（税込）" : "（税抜）"}</span>
+                          <span style={{ color: C.gold, fontSize: 22, fontWeight: 800 }}>{fT(total)}</span>
+                        </div>
+                        <div style={{ textAlign: "right", marginTop: 4 }}>
+                          <span style={{ color: "#999", fontSize: 11 }}>㎡単価（施工込）{fT(Math.round(total / sqm))}/㎡</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* 内訳バーグラフ */}
+            {breakdown.length > 0 && (
+              <div style={{ background: C.white, borderRadius: 4, padding: "14px 16px", marginTop: 12, border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, marginBottom: 10 }}>材料費 内訳</div>
+                {breakdown.map(({ key, name, cost, pct }) => (
+                  <div key={key} style={{ marginBottom: 9 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 3 }}>
+                      <span style={{ fontWeight: 700, color: C.text }}>{name}</span>
+                      <span style={{ color: C.muted }}>{fmtT(cost)}<span style={{ marginLeft: 5, fontWeight: 600, color: C.accent }}>{pct}%</span></span>
+                    </div>
+                    <div style={{ height: 7, borderRadius: 4, background: C.borderLt, overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", borderRadius: 4, background: C.accent, transition: "width 0.7s ease" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* アクションボタン */}
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={() => printEstimate({ projectName, sqm, finish, surf, clearType, workflow, autoSel, manual, pigments, matTotal, pigTotal, grand, uPrice })}
+              <button onClick={() => printEstimate({ projectName, sqm, finish, surf, clearType, workflow, autoSel, manual, pigments, matTotal, pigTotal, grand, uPrice, memo, laborCost, taxIncl })}
                 className="ca-btn-primary"
                 style={{
                   flex: 1, padding: "11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
                   background: C.accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
                 }}>PDF保存</button>
               <button onClick={() => {
-                saveToLocal({ projectName, area, surface: surf, finish, clearType, pigments, manual, grand, uPrice, sqm });
+                saveToLocal({ projectName, area, surface: surf, finish, clearType, pigments, manual, grand, uPrice, sqm, memo });
                 setSaveMsg("保存しました");
                 setTimeout(() => setSaveMsg(""), 2000);
               }} className="ca-btn-primary"
@@ -1256,8 +1760,26 @@ export default function App() {
                 flex: 1, padding: "11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
                 background: C.accentLt, color: C.accentDk, fontSize: 13, fontWeight: 700, cursor: "pointer",
               }}>{saveMsg || "この見積を保存"}</button>
+              <button onClick={copyToClipboard} className="ca-btn-primary"
+                style={{
+                  flex: 1, padding: "11px", borderRadius: 4, border: `1px solid ${C.border}`,
+                  background: copyMsg ? "#e8f5e8" : C.white, color: copyMsg ? "#2d7a2d" : C.sub,
+                  fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
+                }}>{copyMsg || "テキストコピー"}</button>
             </div>
 
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button onClick={() => setShowOrder(true)} className="ca-btn-primary" style={{
+                flex: 1, padding: "11px", borderRadius: 4,
+                border: `1.5px solid ${C.accent}`, background: C.white, color: C.accent,
+                fontSize: 13, fontWeight: 700, cursor: "pointer",
+              }}>発注リスト</button>
+              <button onClick={() => setShowCompare(true)} className="ca-btn-primary" style={{
+                flex: 1, padding: "11px", borderRadius: 4,
+                border: `1px solid ${C.border}`, background: C.white, color: C.sub,
+                fontSize: 13, fontWeight: 700, cursor: "pointer",
+              }}>仕上げ材を比較</button>
+            </div>
             <button onClick={() => { setManual({}); setDone(false); }} style={{
               width: "100%", padding: "11px", borderRadius: 4, marginTop: 8,
               border: `1px solid ${C.border}`, background: C.white, color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer",
@@ -1269,6 +1791,10 @@ export default function App() {
       <ReferencePanel open={showRef} onClose={() => setShowRef(false)} />
       <QuickTablePanel open={showQuick} onClose={() => setShowQuick(false)} activeFinish={finish} />
       <ColorFormulaPanel open={showColor} onClose={() => setShowColor(false)} activeFinish={finish} />
+      <OrderListPanel open={showOrder} onClose={() => setShowOrder(false)}
+        workflow={workflow} autoSel={autoSel} manual={manual} pigments={pigments} sqm={sqm} projectName={projectName} />
+      <ComparePanel open={showCompare} onClose={() => setShowCompare(false)}
+        sqm={sqm} surf={surf} clearType={clearType} />
       <SavedPanel open={showSaved} onClose={() => setShowSaved(false)} onRestore={(entry) => {
         setProjectName(entry.projectName || "");
         setArea(String(entry.area));
@@ -1277,6 +1803,7 @@ export default function App() {
         setClearType(entry.clearType);
         setPigments(entry.pigments || []);
         setManual(entry.manual || {});
+        setMemo(entry.memo || "");
         setDone(true);
       }} />
     </div>

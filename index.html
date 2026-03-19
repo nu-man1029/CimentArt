@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CimentArt 材料費シミュレーター</title>
+
+  <!-- React 18 を CDN (esm.sh) から importmap で解決 -->
+  <script type="importmap">
+  {
+    "imports": {
+      "react":            "https://esm.sh/react@18",
+      "react-dom":        "https://esm.sh/react-dom@18",
+      "react-dom/client": "https://esm.sh/react-dom@18/client"
+    }
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: #f5f3ef; font-family: "Noto Sans JP", "Hiragino Sans", sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Babel Standalone で JSX をブラウザ内でトランスパイル（ビルド不要） -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel" data-type="module">
+    import App from './cimentart-calc.jsx';
+    import { createRoot } from 'react-dom/client';
+    createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
