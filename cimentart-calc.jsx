@@ -186,12 +186,12 @@ const PIGMENTS = [
 ];
 
 const FINISH_OPTIONS = [
-  { id: "aquaQuartz", name: "アクアクオーツ", surfaces: ["floor", "wall", "smooth"] },
-  { id: "aquaMicro", name: "アクアマイクロコンクリート", surfaces: ["floor", "wall", "smooth"] },
-  { id: "aquaNature", name: "アクアネイチャー", surfaces: ["floor", "wall", "smooth"] },
-  { id: "microStucco", name: "マイクロストゥック", surfaces: ["floor", "wall", "smooth"] },
-  { id: "aquaStone", name: "アクアストーン", surfaces: ["wall", "smooth"] },
-  { id: "metallic", name: "メタリック", surfaces: ["floor", "wall", "smooth"] },
+  { id: "aquaQuartz",  name: "アクアクオーツ",          surfaces: ["floor", "wall", "smooth"], desc: "スタンダードなモルタル風仕上げ。玄関・廊下・テラスに最適。耐久性が高く屋外でも使用可。" },
+  { id: "aquaMicro",  name: "アクアマイクロコンクリート", surfaces: ["floor", "wall", "smooth"], desc: "極薄（0.5mm）で既存床の上から施工可能。リノベーションに特に向く床・壁万能タイプ。" },
+  { id: "aquaNature", name: "アクアネイチャー",           surfaces: ["floor", "wall", "smooth"], desc: "石・テラコッタ・砂岩調の自然素材感。和モダン・ガーデン・テラコッタ風の空間演出に。" },
+  { id: "microStucco",name: "マイクロストゥック",         surfaces: ["floor", "wall", "smooth"], desc: "超薄塗り（0.1mm）のイタリア左官調仕上げ。壁・天井・什器など繊細な表現に最適。" },
+  { id: "aquaStone",  name: "アクアストーン",             surfaces: ["wall", "smooth"],          desc: "石目・大理石調の高級感ある仕上げ。壁・平滑下地専用。ライセンス講習受講者のみ施工可。" },
+  { id: "metallic",   name: "メタリック",                 surfaces: ["floor", "wall", "smooth"], desc: "金属粉を混合したラグジュアリー仕上げ。アクセントウォール・商業空間・什器塗装に映える。" },
 ];
 
 const SURFACE_OPTIONS = [
@@ -1050,6 +1050,7 @@ export default function App() {
   const [manual, setManual] = useState({});
   const [done, setDone] = useState(false);
   const [calc, setCalc] = useState(false);
+  const [taxIncl, setTaxIncl] = useState(false);
   const [showRef, setShowRef] = useState(false);
   const [showQuick, setShowQuick] = useState(false);
   const [showColor, setShowColor] = useState(false);
@@ -1084,6 +1085,8 @@ export default function App() {
   const pigTotal = pigments.reduce((s, sp) => { const p = PIGMENTS.find((x) => x.id === sp.id); return s + (p ? p.sizes[sp.sizeIdx].price * sp.qty : 0); }, 0);
   const grand = matTotal + pigTotal;
   const uPrice = sqm > 0 ? Math.round(grand / sqm) : 0;
+  const tx = taxIncl ? 1.1 : 1;
+  const fmtT = (v) => fmt(Math.round(v * tx));
 
   const breakdown = useMemo(() => {
     if (!done || grand === 0) return [];
@@ -1196,6 +1199,11 @@ export default function App() {
                 </button>
               ))}
             </div>
+            {fDef?.desc && (
+              <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 3, background: C.accentLt, border: `1px solid #e2d8cc`, fontSize: 11, color: C.accentDk, lineHeight: 1.6 }}>
+                {fDef.desc}
+              </div>
+            )}
           </div>
 
           <div>
@@ -1242,8 +1250,18 @@ export default function App() {
         {/* Results */}
         {done && sqm > 0 && (
           <div className="ca-result">
+            {/* 税表示トグル */}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+              <button onClick={() => setTaxIncl((v) => !v)} style={{
+                padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                border: `1.5px solid ${taxIncl ? C.accent : C.border}`,
+                background: taxIncl ? C.accentLt : C.white,
+                color: taxIncl ? C.accentDk : C.sub,
+                transition: "all 0.15s",
+              }}>{taxIncl ? "税込（10%）表示中" : "税抜表示中"}</button>
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
-              {[{ l: "材料費合計", v: fmt(grand), h: true }, { l: "㎡単価", v: `${fmt(uPrice)}/㎡` }, { l: "施工面積", v: `${sqm}㎡` }].map((c) => (
+              {[{ l: "材料費合計", v: fmtT(grand), h: true }, { l: "㎡単価", v: `${fmtT(uPrice)}/㎡` }, { l: "施工面積", v: `${sqm}㎡` }].map((c) => (
                 <div key={c.l} className="ca-summary-card" style={{ background: C.dark, borderRadius: 4, padding: "13px 10px", textAlign: "center" }}>
                   <div style={{ fontSize: 10, color: "#999", marginBottom: 3, fontWeight: 600 }}>{c.l}</div>
                   <div style={{ fontSize: c.h ? 18 : 16, fontWeight: 800, color: c.h ? C.gold : "#fff" }}>{c.v}</div>
@@ -1268,20 +1286,20 @@ export default function App() {
             <div style={{ background: C.dark, borderRadius: 4, padding: 20, marginTop: 8, border: `2px solid ${C.accent}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                 <span style={{ color: "#999", fontSize: 13, fontWeight: 600 }}>材料費</span>
-                <span style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>{fmt(matTotal)}</span>
+                <span style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>{fmtT(matTotal)}</span>
               </div>
               {pigTotal > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                   <span style={{ color: "#999", fontSize: 13, fontWeight: 600 }}>顔料</span>
-                  <span style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>{fmt(pigTotal)}</span>
+                  <span style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>{fmtT(pigTotal)}</span>
                 </div>
               )}
               <div style={{ borderTop: "1px solid #555", paddingTop: 12, marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "#fff", fontSize: 15, fontWeight: 800 }}>合計</span>
-                <span style={{ color: C.gold, fontSize: 24, fontWeight: 800 }}>{fmt(grand)}</span>
+                <span style={{ color: "#fff", fontSize: 15, fontWeight: 800 }}>合計{taxIncl ? "（税込）" : "（税抜）"}</span>
+                <span style={{ color: C.gold, fontSize: 24, fontWeight: 800 }}>{fmtT(grand)}</span>
               </div>
               <div style={{ textAlign: "right", marginTop: 4 }}>
-                <span style={{ color: "#999", fontSize: 12 }}>㎡単価 {fmt(uPrice)}/㎡</span>
+                <span style={{ color: "#999", fontSize: 12 }}>㎡単価 {fmtT(uPrice)}/㎡</span>
               </div>
             </div>
 
@@ -1293,7 +1311,7 @@ export default function App() {
                   <div key={key} style={{ marginBottom: 9 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 3 }}>
                       <span style={{ fontWeight: 700, color: C.text }}>{name}</span>
-                      <span style={{ color: C.muted }}>{fmt(cost)}<span style={{ marginLeft: 5, fontWeight: 600, color: C.accent }}>{pct}%</span></span>
+                      <span style={{ color: C.muted }}>{fmtT(cost)}<span style={{ marginLeft: 5, fontWeight: 600, color: C.accent }}>{pct}%</span></span>
                     </div>
                     <div style={{ height: 7, borderRadius: 4, background: C.borderLt, overflow: "hidden" }}>
                       <div style={{ width: `${pct}%`, height: "100%", borderRadius: 4, background: C.accent, transition: "width 0.7s ease" }} />
