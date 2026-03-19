@@ -5,6 +5,68 @@ import { useState, useMemo, useCallback, useEffect } from "react";
    Design: cimentartjapan.jp 公式UIベース
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
+/* ━━━ GlobalStyles ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function GlobalStyles() {
+  useEffect(() => {
+    const id = "ca-global-styles";
+    if (document.getElementById(id)) return;
+    const el = document.createElement("style");
+    el.id = id;
+    el.textContent = `
+      @keyframes ca-slide-up {
+        from { transform: translateY(48px); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+      }
+      @keyframes ca-fade-in {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes ca-pop {
+        0%   { opacity: 0; transform: scale(0.97); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+      .ca-panel-inner {
+        animation: ca-slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      .ca-result {
+        animation: ca-fade-in 0.35s ease;
+      }
+      .ca-card {
+        animation: ca-fade-in 0.22s ease;
+      }
+      .ca-summary-card {
+        animation: ca-pop 0.28s ease;
+      }
+      .ca-btn-primary {
+        transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+      }
+      .ca-btn-primary:hover:not(:disabled) {
+        filter: brightness(1.08);
+        box-shadow: 0 4px 12px rgba(139,115,85,.28);
+        transform: translateY(-1px);
+      }
+      .ca-btn-primary:active:not(:disabled) {
+        transform: translateY(0);
+      }
+      .ca-btn-ghost {
+        transition: background 0.15s, color 0.15s;
+      }
+      .ca-btn-ghost:hover {
+        background: #ede8df !important;
+      }
+      .ca-header-btn {
+        transition: background 0.15s, transform 0.1s;
+      }
+      .ca-header-btn:hover {
+        filter: brightness(0.95);
+        transform: translateY(-1px);
+      }
+    `;
+    document.head.appendChild(el);
+  }, []);
+  return null;
+}
+
 const MATERIALS = {
   primer: {
     name: "【1】プライマー/メッシュ", cat: "primer", coats: 1,
@@ -390,7 +452,7 @@ function MaterialCard({ materialKey, autoSel, manualSel, onManualChange, area })
   const hasSz = mat.sizes.length > 1 && !mat.perBase;
 
   return (
-    <div style={{
+    <div className="ca-card" style={{
       background: C.white, borderRadius: 4, marginBottom: 10,
       border: isM ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
     }}>
@@ -709,7 +771,7 @@ function SavedPanel({ open, onClose, onRestore }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
-      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
         </div>
@@ -766,7 +828,7 @@ function ReferencePanel({ open, onClose }) {
   const th = { padding: "7px 10px", fontWeight: 600, fontSize: 11, color: C.muted, borderBottom: `2px solid ${C.border}`, letterSpacing: ".3px" };
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
-      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
         </div>
@@ -836,7 +898,7 @@ function QuickTablePanel({ open, onClose, activeFinish }) {
   const th = { padding: "7px 10px", fontWeight: 600, fontSize: 11, color: C.muted, borderBottom: `2px solid ${C.border}`, letterSpacing: ".3px" };
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
-      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
         </div>
@@ -901,7 +963,7 @@ function ColorFormulaPanel({ open, onClose, activeFinish }) {
   const th = { padding: "5px 7px", fontWeight: 600, fontSize: 10, color: C.muted, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap", letterSpacing: ".2px" };
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
-      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 900, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 900, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} className="ca-panel-inner" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px", flexShrink: 0 }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
         </div>
@@ -1016,6 +1078,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Noto Sans JP','Hiragino Sans',-apple-system,sans-serif", color: C.text }}>
+      <GlobalStyles />
       {/* Header */}
       <div style={{ background: C.white, padding: "20px 20px 18px", borderBottom: `1px solid ${C.border}`, boxShadow: "0 1px 3px rgba(0,0,0,.03)" }}>
         <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", alignItems: "center", gap: 12 }}>
@@ -1026,22 +1089,22 @@ export default function App() {
             <p style={{ margin: "2px 0 0", fontSize: 11, color: C.muted }}>Cement Artist Nu☆Man — 現場別コスト算出ツール</p>
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <button onClick={() => setShowSaved(true)} style={{
+            <button onClick={() => setShowSaved(true)} className="ca-header-btn" style={{
               padding: "7px 11px", borderRadius: 4, border: `1px solid ${C.border}`,
               background: C.white, color: C.sub, fontSize: 11, fontWeight: 700,
               cursor: "pointer", whiteSpace: "nowrap",
             }}>保存履歴</button>
-            <button onClick={() => setShowColor(true)} style={{
+            <button onClick={() => setShowColor(true)} className="ca-header-btn" style={{
               padding: "7px 11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
               background: C.accentLt, color: C.accentDk, fontSize: 11, fontWeight: 700,
               cursor: "pointer", whiteSpace: "nowrap",
             }}>カラー配合表</button>
-            <button onClick={() => setShowQuick(true)} style={{
+            <button onClick={() => setShowQuick(true)} className="ca-header-btn" style={{
               padding: "7px 11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
               background: C.accentLt, color: C.accentDk, fontSize: 11, fontWeight: 700,
               cursor: "pointer", whiteSpace: "nowrap",
             }}>早見表</button>
-            <button onClick={() => setShowRef(true)} style={{
+            <button onClick={() => setShowRef(true)} className="ca-header-btn" style={{
               padding: "7px 11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
               background: C.white, color: C.accent, fontSize: 11, fontWeight: 700,
               cursor: "pointer", whiteSpace: "nowrap",
@@ -1122,6 +1185,7 @@ export default function App() {
 
         {/* Calc button */}
         <button onClick={() => { setManual({}); setDone(true); }} disabled={sqm <= 0}
+          className="ca-btn-primary"
           style={{
             width: "100%", padding: "13px", borderRadius: 4, border: "none",
             background: sqm > 0 ? C.accent : C.border, color: "#fff", fontSize: 15, fontWeight: 700,
@@ -1131,10 +1195,10 @@ export default function App() {
 
         {/* Results */}
         {done && sqm > 0 && (
-          <>
+          <div className="ca-result">
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
               {[{ l: "材料費合計", v: fmt(grand), h: true }, { l: "㎡単価", v: `${fmt(uPrice)}/㎡` }, { l: "施工面積", v: `${sqm}㎡` }].map((c) => (
-                <div key={c.l} style={{ background: C.dark, borderRadius: 4, padding: "13px 10px", textAlign: "center" }}>
+                <div key={c.l} className="ca-summary-card" style={{ background: C.dark, borderRadius: 4, padding: "13px 10px", textAlign: "center" }}>
                   <div style={{ fontSize: 10, color: "#999", marginBottom: 3, fontWeight: 600 }}>{c.l}</div>
                   <div style={{ fontSize: c.h ? 18 : 16, fontWeight: 800, color: c.h ? C.gold : "#fff" }}>{c.v}</div>
                 </div>
@@ -1178,6 +1242,7 @@ export default function App() {
             {/* アクションボタン */}
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
               <button onClick={() => printEstimate({ projectName, sqm, finish, surf, clearType, workflow, autoSel, manual, pigments, matTotal, pigTotal, grand, uPrice })}
+                className="ca-btn-primary"
                 style={{
                   flex: 1, padding: "11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
                   background: C.accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
@@ -1186,7 +1251,8 @@ export default function App() {
                 saveToLocal({ projectName, area, surface: surf, finish, clearType, pigments, manual, grand, uPrice, sqm });
                 setSaveMsg("保存しました");
                 setTimeout(() => setSaveMsg(""), 2000);
-              }} style={{
+              }} className="ca-btn-primary"
+                style={{
                 flex: 1, padding: "11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
                 background: C.accentLt, color: C.accentDk, fontSize: 13, fontWeight: 700, cursor: "pointer",
               }}>{saveMsg || "この見積を保存"}</button>
@@ -1196,7 +1262,7 @@ export default function App() {
               width: "100%", padding: "11px", borderRadius: 4, marginTop: 8,
               border: `1px solid ${C.border}`, background: C.white, color: C.sub, fontSize: 13, fontWeight: 600, cursor: "pointer",
             }}>条件をクリア</button>
-          </>
+          </div>
         )}
       </div>
 
