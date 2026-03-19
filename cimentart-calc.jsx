@@ -807,6 +807,7 @@ function SavedPanel({ open, onClose, onRestore }) {
                       <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{entry.projectName || "（現場名なし）"}</div>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{entry.savedAt} ／ {finishName} ／ {entry.sqm}㎡</div>
                       <div style={{ fontSize: 14, fontWeight: 800, color: C.accent, marginTop: 4 }}>{fmt(entry.grand)} <span style={{ fontSize: 11, fontWeight: 600, color: C.muted }}>（{fmt(entry.uPrice)}/㎡）</span></div>
+                      {entry.memo && <div style={{ fontSize: 11, color: C.sub, marginTop: 3, fontStyle: "italic" }}>📝 {entry.memo}</div>}
                     </div>
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                       <button onClick={() => { onRestore(entry); onClose(); }} style={{
@@ -1054,6 +1055,9 @@ export default function App() {
   const [laborCost, setLaborCost] = useState("");
   const [showLabor, setShowLabor] = useState(false);
   const [copyMsg, setCopyMsg] = useState("");
+  const [memo, setMemo] = useState("");
+  const [showDim, setShowDim] = useState(false);
+  const [dimSpaces, setDimSpaces] = useState([{ name: "", l: "", w: "" }]);
   const [showRef, setShowRef] = useState(false);
   const [showQuick, setShowQuick] = useState(false);
   const [showColor, setShowColor] = useState(false);
@@ -1080,6 +1084,18 @@ export default function App() {
     setManual((p) => { const n = { ...p }; if (v === null) delete n[k]; else n[k] = v; return n; });
   }, []);
 
+  const dimTotal = dimSpaces.reduce((s, sp) => {
+    const v = parseFloat(sp.l) * parseFloat(sp.w);
+    return s + (isNaN(v) ? 0 : v);
+  }, 0);
+  const updateDimSpace = (i, field, val) =>
+    setDimSpaces((prev) => prev.map((sp, idx) => idx === i ? { ...sp, [field]: val } : sp));
+  const addDimSpace    = () => setDimSpaces((prev) => [...prev, { name: "", l: "", w: "" }]);
+  const removeDimSpace = (i) => setDimSpaces((prev) => prev.filter((_, idx) => idx !== i));
+  const applyDim = () => {
+    if (dimTotal > 0) { setArea(String(Math.round(dimTotal * 10) / 10)); setDone(false); }
+  };
+
   const copyToClipboard = () => {
     const finName  = FINISH_OPTIONS.find((f) => f.id === finish)?.name || finish;
     const surfName = SURFACE_OPTIONS.find((s) => s.id === surf)?.name || surf;
@@ -1090,6 +1106,7 @@ export default function App() {
     const lines = [
       "【CimentArt 材料費見積】",
       `現場名  ：${projectName || "（未設定）"}`,
+      ...(memo ? [`メモ    ：${memo}`] : []),
       `仕上げ  ：${finName} / ${surfName} / クリア${clrName}`,
       `施工面積：${sqm}㎡`,
       "",
@@ -1223,6 +1240,58 @@ export default function App() {
                 );
               })}
             </div>
+
+            {/* 寸法計算ツール */}
+            <div style={{ marginTop: 8 }}>
+              <button onClick={() => setShowDim((v) => !v)} style={{
+                fontSize: 11, fontWeight: 700, color: C.accent, background: "none", border: "none",
+                cursor: "pointer", padding: "2px 0", textDecoration: "underline",
+              }}>{showDim ? "▲ 寸法入力を閉じる" : "▸ 寸法から面積を計算する（複数スペース対応）"}</button>
+              {showDim && (
+                <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 4, border: `1px solid ${C.border}`, background: C.bg }}>
+                  {dimSpaces.map((sp, i) => {
+                    const area_ = parseFloat(sp.l) * parseFloat(sp.w);
+                    const areaStr = !isNaN(area_) && sp.l && sp.w ? `${Math.round(area_ * 10) / 10}㎡` : "—";
+                    return (
+                      <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 7, flexWrap: "wrap" }}>
+                        <input placeholder={`スペース${i + 1}（任意）`} value={sp.name}
+                          onChange={(e) => updateDimSpace(i, "name", e.target.value)}
+                          style={{ flex: "2 1 80px", padding: "7px 9px", borderRadius: 3, border: `1px solid ${C.border}`, fontSize: 12, minWidth: 0 }} />
+                        <input type="number" placeholder="縦(m)" value={sp.l} min="0" step="0.1"
+                          onChange={(e) => updateDimSpace(i, "l", e.target.value)}
+                          style={{ flex: "1 1 54px", padding: "7px 8px", borderRadius: 3, border: `1px solid ${C.border}`, fontSize: 12, minWidth: 0 }} />
+                        <span style={{ color: C.muted, fontWeight: 700, fontSize: 13 }}>×</span>
+                        <input type="number" placeholder="横(m)" value={sp.w} min="0" step="0.1"
+                          onChange={(e) => updateDimSpace(i, "w", e.target.value)}
+                          style={{ flex: "1 1 54px", padding: "7px 8px", borderRadius: 3, border: `1px solid ${C.border}`, fontSize: 12, minWidth: 0 }} />
+                        <span style={{ fontSize: 12, color: C.accentDk, fontWeight: 700, minWidth: 44 }}>{areaStr}</span>
+                        {dimSpaces.length > 1 && (
+                          <button onClick={() => removeDimSpace(i)} style={{
+                            padding: "4px 8px", borderRadius: 3, border: `1px solid ${C.border}`,
+                            background: C.white, color: C.ng, fontSize: 11, cursor: "pointer",
+                          }}>✕</button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+                    <button onClick={addDimSpace} style={{
+                      padding: "5px 12px", borderRadius: 3, border: `1px solid ${C.border}`,
+                      background: C.white, color: C.sub, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                    }}>+ スペースを追加</button>
+                    {dimTotal > 0 && (
+                      <>
+                        <span style={{ fontSize: 12, color: C.sub }}>合計 <strong style={{ color: C.accentDk }}>{Math.round(dimTotal * 10) / 10}㎡</strong></span>
+                        <button onClick={applyDim} style={{
+                          padding: "5px 14px", borderRadius: 3, border: `1.5px solid ${C.accent}`,
+                          background: C.accentLt, color: C.accentDk, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                        }}>この面積（{Math.round(dimTotal * 10) / 10}㎡）を使う</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{ marginBottom: 14 }}>
@@ -1255,11 +1324,21 @@ export default function App() {
             )}
           </div>
 
-          <div>
+          <div style={{ marginBottom: 14 }}>
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.muted, marginBottom: 5 }}>クリア仕上げ</label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {CLEAR_OPTIONS.map((o) => <button key={o.id} onClick={() => { setClearType(o.id); setDone(false); }} style={btn(clearType === o.id)}>{o.name}</button>)}
             </div>
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.muted, marginBottom: 3 }}>現場メモ（任意）</label>
+            <textarea value={memo} onChange={(e) => setMemo(e.target.value)}
+              placeholder="注意事項・下地状況・特記事項など"
+              rows={2}
+              style={{ ...inp, resize: "vertical", lineHeight: 1.5, fontFamily: "inherit" }}
+              onFocus={(e) => (e.target.style.borderColor = C.accent)}
+              onBlur={(e) => (e.target.style.borderColor = C.border)} />
           </div>
         </div>
 
@@ -1426,7 +1505,7 @@ export default function App() {
                   background: C.accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
                 }}>PDF保存</button>
               <button onClick={() => {
-                saveToLocal({ projectName, area, surface: surf, finish, clearType, pigments, manual, grand, uPrice, sqm });
+                saveToLocal({ projectName, area, surface: surf, finish, clearType, pigments, manual, grand, uPrice, sqm, memo });
                 setSaveMsg("保存しました");
                 setTimeout(() => setSaveMsg(""), 2000);
               }} className="ca-btn-primary"
@@ -1461,6 +1540,7 @@ export default function App() {
         setClearType(entry.clearType);
         setPigments(entry.pigments || []);
         setManual(entry.manual || {});
+        setMemo(entry.memo || "");
         setDone(true);
       }} />
     </div>
