@@ -455,7 +455,7 @@ const C = {
 };
 
 /* ━━━ MaterialCard ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function MaterialCard({ materialKey, index = 0, autoSel, manualSel, onManualChange, area }) {
+function MaterialCard({ materialKey, index = 0, autoSel, manualSel, onManualChange, area, note = "", onNoteChange = () => {} }) {
   const mat = MATERIALS[materialKey];
   if (!mat) return null;
   const isM = !!manualSel;
@@ -567,6 +567,22 @@ function MaterialCard({ materialKey, index = 0, autoSel, manualSel, onManualChan
               <span style={{ fontSize: 10, color: C.accent, fontWeight: 600, display: "flex", alignItems: "center", marginLeft: 4 }}>手動モード</span>
             </>
           )}
+        </div>
+      )}
+      {isM && (
+        <div style={{ padding: "0 16px 12px" }}>
+          <textarea
+            value={note}
+            onChange={(e) => onNoteChange(materialKey, e.target.value)}
+            placeholder="調整理由を記録（例：残材があるため個数を減らした）"
+            rows={2}
+            style={{
+              width: "100%", padding: "6px 10px", borderRadius: 3,
+              border: `1px dashed ${C.accent}`, fontSize: 11, color: C.sub,
+              resize: "none", fontFamily: "inherit", boxSizing: "border-box",
+              background: C.accentLt, outline: "none",
+            }}
+          />
         </div>
       )}
     </div>
@@ -1201,6 +1217,32 @@ function QuickTablePanel({ open, onClose, activeFinish }) {
   );
 }
 
+/* ━━━ カラー配合からスウォッチ色を計算 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const PIGMENT_BASE = {
+  BLACK_JS:    { rgb: [22, 20, 20], sat: 18 },
+  BLUE_LS:     { rgb: [28, 72, 188], sat: 38 },
+  YELLOW_QS:   { rgb: [238, 208, 18], sat: 7 },
+  OCHER_TS:    { rgb: [198, 148, 42], sat: 16 },
+  GREEN_PS:    { rgb: [52, 128, 52], sat: 4 },
+  BROWN_WS:    { rgb: [142, 86, 30], sat: 7 },
+  ORANGE_US:   { rgb: [228, 100, 18], sat: 13 },
+  OXIDE_RED_YS:{ rgb: [178, 46, 22], sat: 24 },
+  RED_VS:      { rgb: [198, 20, 28], sat: 38 },
+};
+
+function computeSwatchColor(pigments) {
+  let r = 244, g = 239, b = 230; // セメントベース（オフホワイト）
+  Object.entries(pigments).forEach(([key, amt]) => {
+    if (!amt || !PIGMENT_BASE[key]) return;
+    const { rgb, sat } = PIGMENT_BASE[key];
+    const s = 1 - Math.exp(-amt / sat * 1.5);
+    r = r + (rgb[0] - r) * s;
+    g = g + (rgb[1] - g) * s;
+    b = b + (rgb[2] - b) * s;
+  });
+  return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+}
+
 /* ━━━ ColorFormulaPanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const COLOR_FORMULA_TABS = [
   { key: "microStucco", label: "マイクロストゥック" },
@@ -1248,15 +1290,27 @@ function ColorFormulaPanel({ open, onClose, activeFinish }) {
             <table style={{ borderCollapse: "collapse", fontSize: 11, minWidth: "100%" }}>
               <thead><tr style={{ background: C.bg }}>
                 <th style={{ ...th, textAlign: "center", minWidth: 52 }}>No.</th>
+                <th style={{ ...th, textAlign: "center", minWidth: 36 }}>色見本</th>
                 <th style={{ ...th, textAlign: "left", minWidth: 90 }}>カラー名</th>
                 {usedCols.map((col) => (
                   <th key={col.key} style={{ ...th, textAlign: "right", minWidth: 60 }}>{col.label}</th>
                 ))}
               </tr></thead>
               <tbody>
-                {data.colors.map((color) => (
+                {data.colors.map((color) => {
+                  const swatchColor = computeSwatchColor(color.pigments);
+                  return (
                   <tr key={color.code} style={{ borderBottom: `1px solid ${C.borderLt}` }}>
                     <td style={{ padding: "6px 7px", textAlign: "center", color: C.muted, fontWeight: 600, fontSize: 11 }}>{color.code}</td>
+                    <td style={{ padding: "4px 6px", textAlign: "center" }}>
+                      <div style={{
+                        width: 28, height: 20, borderRadius: 4,
+                        background: swatchColor,
+                        border: "1px solid rgba(0,0,0,.12)",
+                        boxShadow: "inset 0 1px 2px rgba(255,255,255,.4)",
+                        margin: "0 auto",
+                      }} title={color.name} />
+                    </td>
                     <td style={{ padding: "6px 7px", fontWeight: 600, color: C.text, whiteSpace: "nowrap" }}>{color.name}</td>
                     {usedCols.map((col) => {
                       const val = color.pigments[col.key];
@@ -1272,9 +1326,113 @@ function ColorFormulaPanel({ open, onClose, activeFinish }) {
                       );
                     })}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ━━━ SidebarPricePanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function SidebarPricePanel({ workflow, manualNotes, adjLog, onAddLog }) {
+  const [logInput, setLogInput] = useState("");
+
+  const handleAdd = () => {
+    if (!logInput.trim()) return;
+    onAddLog(logInput.trim());
+    setLogInput("");
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* 単価一覧 */}
+      <div style={{ background: C.white, borderRadius: 4, border: `1px solid ${C.border}` }}>
+        <div style={{ padding: "12px 14px 8px", borderBottom: `1px solid ${C.borderLt}` }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>材料単価一覧</div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>使用材料のサイズ・定価・㎡単価</div>
+        </div>
+        <div style={{ maxHeight: 400, overflowY: "auto", padding: "8px 14px 12px" }}>
+          {workflow.map((key) => {
+            const mat = MATERIALS[key];
+            if (!mat) return null;
+            return (
+              <div key={key} style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, marginBottom: 4, paddingLeft: 6, borderLeft: `2px solid ${C.accent}` }}>{mat.name}</div>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                  <thead>
+                    <tr style={{ background: C.bg }}>
+                      <th style={{ padding: "3px 4px", fontWeight: 600, color: C.muted, textAlign: "left" }}>サイズ</th>
+                      <th style={{ padding: "3px 4px", fontWeight: 600, color: C.muted, textAlign: "center" }}>施工㎡</th>
+                      <th style={{ padding: "3px 4px", fontWeight: 600, color: C.muted, textAlign: "right" }}>定価</th>
+                      <th style={{ padding: "3px 4px", fontWeight: 600, color: C.muted, textAlign: "right" }}>㎡単価</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mat.sizes.map((s, i) => (
+                      <tr key={i} style={{ borderBottom: `1px solid ${C.borderLt}` }}>
+                        <td style={{ padding: "4px 4px", color: C.sub, fontWeight: 600 }}>{s.label}</td>
+                        <td style={{ padding: "4px 4px", textAlign: "center", color: C.muted }}>{s.coverage ? `${s.coverage}㎡` : "—"}</td>
+                        <td style={{ padding: "4px 4px", textAlign: "right", fontWeight: 700, color: C.text }}>{fmt(s.price)}</td>
+                        <td style={{ padding: "4px 4px", textAlign: "right", color: C.accent, fontWeight: 600 }}>{s.unitPrice ? `${fmt(s.unitPrice)}/㎡` : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 調整メモ */}
+      <div style={{ background: C.white, borderRadius: 4, border: `1px solid ${C.border}` }}>
+        <div style={{ padding: "12px 14px 8px", borderBottom: `1px solid ${C.borderLt}` }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>調整メモ</div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>変更理由・現場メモを時系列で記録</div>
+        </div>
+        <div style={{ padding: "10px 14px 14px" }}>
+          {/* 各材料の調整理由サマリー */}
+          {Object.entries(manualNotes).filter(([, v]) => v).length > 0 && (
+            <div style={{ marginBottom: 10, padding: "8px 10px", background: C.accentLt, borderRadius: 3, border: `1px solid ${C.border}` }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.accentDk, marginBottom: 6 }}>各材料の調整理由</div>
+              {Object.entries(manualNotes).filter(([, v]) => v).map(([k, v]) => (
+                <div key={k} style={{ fontSize: 11, color: C.text, marginBottom: 4, paddingBottom: 4, borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ fontWeight: 700, color: C.accent }}>{MATERIALS[k]?.name || k}：</span>{v}
+                </div>
+              ))}
+            </div>
+          )}
+          {/* 自由入力ログ */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+            <textarea
+              value={logInput}
+              onChange={(e) => setLogInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAdd(); }}
+              placeholder="追加メモを入力（Ctrl+Enterで記録）"
+              rows={2}
+              style={{ flex: 1, padding: "6px 10px", borderRadius: 3, border: `1px solid ${C.border}`, fontSize: 11, fontFamily: "inherit", resize: "none", outline: "none" }}
+            />
+            <button onClick={handleAdd} style={{
+              padding: "6px 12px", borderRadius: 3, border: `1.5px solid ${C.accent}`,
+              background: C.accent, color: "#fff", fontSize: 11, fontWeight: 700,
+              cursor: "pointer", whiteSpace: "nowrap", alignSelf: "flex-end",
+            }}>記録</button>
+          </div>
+          <div style={{ maxHeight: 220, overflowY: "auto" }}>
+            {adjLog.length === 0 ? (
+              <div style={{ fontSize: 11, color: C.muted, textAlign: "center", padding: "12px 0" }}>まだ記録はありません</div>
+            ) : (
+              [...adjLog].reverse().map((entry) => (
+                <div key={entry.id} style={{ padding: "7px 0", borderBottom: `1px solid ${C.borderLt}` }}>
+                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 2 }}>{entry.ts}</div>
+                  <div style={{ fontSize: 12, color: C.text, lineHeight: 1.5 }}>{entry.text}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -1307,6 +1465,18 @@ export default function App() {
   const [showOrder, setShowOrder] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [manualNotes, setManualNotes] = useState({});
+  const [adjLog, setAdjLog] = useState([]);
+
+  const handleManualNote = useCallback((k, v) => {
+    setManualNotes((p) => ({ ...p, [k]: v }));
+  }, []);
+
+  const addAdjLog = useCallback((text) => {
+    const now = new Date();
+    const ts = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    setAdjLog((prev) => [...prev, { id: Date.now(), ts, text }]);
+  }, []);
 
   const sqm = parseFloat(area) || 0;
   const fDef = FINISH_OPTIONS.find((f) => f.id === finish);
@@ -1325,7 +1495,25 @@ export default function App() {
   }, [sqm, workflow]);
 
   const handleManual = useCallback((k, v) => {
-    setManual((p) => { const n = { ...p }; if (v === null) delete n[k]; else n[k] = v; return n; });
+    setManual((p) => {
+      const n = { ...p };
+      if (v === null) {
+        delete n[k];
+        const matName = MATERIALS[k]?.name || k;
+        const now = new Date();
+        const ts = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        setAdjLog((prev) => [...prev, { id: Date.now(), ts, text: `「${matName}」を自動計算に戻しました` }]);
+      } else {
+        if (!n[k]) {
+          const matName = MATERIALS[k]?.name || k;
+          const now = new Date();
+          const ts = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+          setAdjLog((prev) => [...prev, { id: Date.now(), ts, text: `「${matName}」手動調整を開始` }]);
+        }
+        n[k] = v;
+      }
+      return n;
+    });
   }, []);
 
   const dimTotal = dimSpaces.reduce((s, sp) => {
@@ -1453,7 +1641,9 @@ export default function App() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: "20px 16px 60px" }}>
+      <div style={{ maxWidth: done ? 1300 : 720, margin: "0 auto", padding: "20px 16px 60px", transition: "max-width 0.3s" }}>
+        <div style={done && sqm > 0 ? { display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 20, alignItems: "start" } : {}}>
+        <div> {/* main column start */}
         {/* Input */}
         <div style={{ background: C.white, borderRadius: 4, padding: 20, marginBottom: 14, border: `1px solid ${C.border}` }}>
           <h2 style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 700, paddingBottom: 10, borderBottom: `1px solid ${C.borderLt}` }}>現場情報を入力</h2>
@@ -1653,7 +1843,7 @@ export default function App() {
             </h3>
 
             {workflow.map((k, idx) => (
-              <MaterialCard key={k} materialKey={k} index={idx} autoSel={autoSel[k] || []} manualSel={manual[k] || null} onManualChange={handleManual} area={sqm} />
+              <MaterialCard key={k} materialKey={k} index={idx} autoSel={autoSel[k] || []} manualSel={manual[k] || null} onManualChange={handleManual} area={sqm} note={manualNotes[k] || ""} onNoteChange={handleManualNote} />
             ))}
 
             <PigmentSelector pigs={pigments} onChange={setPigments} />
@@ -1786,6 +1976,20 @@ export default function App() {
             }}>条件をクリア</button>
           </div>
         )}
+        </div> {/* main column end */}
+
+        {/* サイドバー */}
+        {done && sqm > 0 && (
+          <div style={{ position: "sticky", top: 16 }}>
+            <SidebarPricePanel
+              workflow={workflow}
+              manualNotes={manualNotes}
+              adjLog={adjLog}
+              onAddLog={addAdjLog}
+            />
+          </div>
+        )}
+        </div> {/* grid end */}
       </div>
 
       <ReferencePanel open={showRef} onClose={() => setShowRef(false)} />
