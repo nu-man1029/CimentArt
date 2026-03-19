@@ -1051,6 +1051,9 @@ export default function App() {
   const [done, setDone] = useState(false);
   const [calc, setCalc] = useState(false);
   const [taxIncl, setTaxIncl] = useState(false);
+  const [laborCost, setLaborCost] = useState("");
+  const [showLabor, setShowLabor] = useState(false);
+  const [copyMsg, setCopyMsg] = useState("");
   const [showRef, setShowRef] = useState(false);
   const [showQuick, setShowQuick] = useState(false);
   const [showColor, setShowColor] = useState(false);
@@ -1076,6 +1079,52 @@ export default function App() {
   const handleManual = useCallback((k, v) => {
     setManual((p) => { const n = { ...p }; if (v === null) delete n[k]; else n[k] = v; return n; });
   }, []);
+
+  const copyToClipboard = () => {
+    const finName  = FINISH_OPTIONS.find((f) => f.id === finish)?.name || finish;
+    const surfName = SURFACE_OPTIONS.find((s) => s.id === surf)?.name || surf;
+    const clrName  = CLEAR_OPTIONS.find((c) => c.id === clearType)?.name || clearType;
+    const txR = taxIncl ? 1.1 : 1;
+    const fT  = (v) => fmt(Math.round(v * txR));
+    const labor = parseFloat(laborCost) || 0;
+    const lines = [
+      "【CimentArt 材料費見積】",
+      `現場名  ：${projectName || "（未設定）"}`,
+      `仕上げ  ：${finName} / ${surfName} / クリア${clrName}`,
+      `施工面積：${sqm}㎡`,
+      "",
+      "■ 材料明細",
+      ...workflow.flatMap((k) =>
+        calcLineItems(k, manual[k] || autoSel[k] || []).map(
+          (i) => `  ${MATERIALS[k]?.name}: ${i.label} × ${i.qty}個 = ${fmt(i.subtotal)}`
+        )
+      ),
+      ...(pigments.length > 0 ? [
+        "",
+        "  【顔料】",
+        ...pigments.map((sp) => {
+          const p = PIGMENTS.find((x) => x.id === sp.id);
+          return p ? `  ${p.name} ${p.sizes[sp.sizeIdx].label} × ${sp.qty}個 = ${fmt(p.sizes[sp.sizeIdx].price * sp.qty)}` : "";
+        }).filter(Boolean),
+      ] : []),
+      "",
+      "■ 合計",
+      `  材料費 ：${fmt(matTotal)}`,
+      ...(pigTotal > 0 ? [`  顔料   ：${fmt(pigTotal)}`] : []),
+      `  小計（税抜）：${fmt(grand)}`,
+      ...(taxIncl ? [`  小計（税込）：${fT(grand)}`] : []),
+      ...(labor > 0 ? [
+        `  施工費 ：${fmt(labor)}`,
+        `  合計見積（税抜）：${fmt(grand + labor)}`,
+        ...(taxIncl ? [`  合計見積（税込）：${fT(grand + labor)}`] : []),
+      ] : []),
+      `  ㎡単価 ：${fT(labor > 0 ? Math.round((grand + labor) / sqm) : uPrice)}/㎡`,
+    ];
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setCopyMsg("コピーしました！");
+      setTimeout(() => setCopyMsg(""), 2500);
+    });
+  };
 
   const matTotal = useMemo(() => {
     if (!done) return 0;
@@ -1303,6 +1352,53 @@ export default function App() {
               </div>
             </div>
 
+            {/* 施工費加算 */}
+            <div style={{ marginTop: 10 }}>
+              <button onClick={() => setShowLabor((v) => !v)} style={{
+                width: "100%", padding: "9px 14px", borderRadius: 4, textAlign: "left",
+                border: `1px solid ${C.border}`, background: C.white, color: C.sub,
+                fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", justifyContent: "space-between",
+              }}>
+                <span>施工費・諸経費を追加する</span>
+                <span>{showLabor ? "▲" : "▼"}</span>
+              </button>
+              {showLabor && (
+                <div style={{ border: `1px solid ${C.border}`, borderTop: "none", borderRadius: "0 0 4px 4px", padding: "14px 16px", background: C.white }}>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.muted, marginBottom: 4 }}>施工費・人件費・諸経費（円・税抜）</label>
+                  <input type="number" value={laborCost} onChange={(e) => setLaborCost(e.target.value)}
+                    placeholder="例：80000" min="0" step="1000"
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: 4, border: `1px solid ${C.border}`, fontSize: 14, boxSizing: "border-box", outline: "none", color: C.text }}
+                    onFocus={(e) => (e.target.style.borderColor = C.accent)}
+                    onBlur={(e) => (e.target.style.borderColor = C.border)} />
+                  {parseFloat(laborCost) > 0 && (() => {
+                    const labor = parseFloat(laborCost);
+                    const total = grand + labor;
+                    const txR = taxIncl ? 1.1 : 1;
+                    const fT = (v) => fmt(Math.round(v * txR));
+                    return (
+                      <div style={{ background: C.dark, borderRadius: 4, padding: "14px 16px", marginTop: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                          <span style={{ color: "#999", fontSize: 12 }}>材料費</span>
+                          <span style={{ color: "#fff", fontSize: 13 }}>{fT(grand)}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span style={{ color: "#999", fontSize: 12 }}>施工費</span>
+                          <span style={{ color: "#fff", fontSize: 13 }}>{fT(labor)}</span>
+                        </div>
+                        <div style={{ borderTop: "1px solid #555", paddingTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>総見積{taxIncl ? "（税込）" : "（税抜）"}</span>
+                          <span style={{ color: C.gold, fontSize: 22, fontWeight: 800 }}>{fT(total)}</span>
+                        </div>
+                        <div style={{ textAlign: "right", marginTop: 4 }}>
+                          <span style={{ color: "#999", fontSize: 11 }}>㎡単価（施工込）{fT(Math.round(total / sqm))}/㎡</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
             {/* 内訳バーグラフ */}
             {breakdown.length > 0 && (
               <div style={{ background: C.white, borderRadius: 4, padding: "14px 16px", marginTop: 12, border: `1px solid ${C.border}` }}>
@@ -1338,6 +1434,12 @@ export default function App() {
                 flex: 1, padding: "11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
                 background: C.accentLt, color: C.accentDk, fontSize: 13, fontWeight: 700, cursor: "pointer",
               }}>{saveMsg || "この見積を保存"}</button>
+              <button onClick={copyToClipboard} className="ca-btn-primary"
+                style={{
+                  flex: 1, padding: "11px", borderRadius: 4, border: `1px solid ${C.border}`,
+                  background: copyMsg ? "#e8f5e8" : C.white, color: copyMsg ? "#2d7a2d" : C.sub,
+                  fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
+                }}>{copyMsg || "テキストコピー"}</button>
             </div>
 
             <button onClick={() => { setManual({}); setDone(false); }} style={{
