@@ -1085,6 +1085,17 @@ export default function App() {
   const grand = matTotal + pigTotal;
   const uPrice = sqm > 0 ? Math.round(grand / sqm) : 0;
 
+  const breakdown = useMemo(() => {
+    if (!done || grand === 0) return [];
+    const items = [];
+    workflow.forEach((k) => {
+      const cost = calcLineItems(k, manual[k] || autoSel[k] || []).reduce((a, i) => a + i.subtotal, 0);
+      if (cost > 0) items.push({ key: k, name: MATERIALS[k]?.name || k, cost, pct: Math.round(cost / grand * 100) });
+    });
+    if (pigTotal > 0) items.push({ key: "pigment", name: "顔料", cost: pigTotal, pct: Math.round(pigTotal / grand * 100) });
+    return items.sort((a, b) => b.cost - a.cost);
+  }, [done, grand, workflow, autoSel, manual, pigTotal]);
+
   const inp = { width: "100%", padding: "10px 12px", borderRadius: 4, border: `1px solid ${C.border}`, fontSize: 15, boxSizing: "border-box", outline: "none", color: C.text, background: C.white };
   const btn = (a) => ({
     padding: "8px 16px", borderRadius: 4, fontSize: 13, fontWeight: 600,
@@ -1145,6 +1156,21 @@ export default function App() {
             <input type="number" value={area} onChange={(e) => { setArea(e.target.value); setDone(false); }}
               placeholder="例：30" min="0.1" step="0.1" style={inp}
               onFocus={(e) => (e.target.style.borderColor = C.accent)} onBlur={(e) => (e.target.style.borderColor = C.border)} />
+            <div style={{ display: "flex", gap: 5, marginTop: 6, flexWrap: "wrap" }}>
+              {[5, 10, 15, 20, 30, 50].map((v) => {
+                const active = area === String(v);
+                return (
+                  <button key={v} onClick={() => { setArea(String(v)); setDone(false); }}
+                    style={{
+                      padding: "3px 10px", borderRadius: 3, fontSize: 11, fontWeight: 700,
+                      border: active ? `1.5px solid ${C.accent}` : `1px solid ${C.border}`,
+                      background: active ? C.accentLt : C.white,
+                      color: active ? C.accentDk : C.sub, cursor: "pointer",
+                      transition: "all 0.12s",
+                    }}>{v}㎡</button>
+                );
+              })}
+            </div>
           </div>
 
           <div style={{ marginBottom: 14 }}>
@@ -1258,6 +1284,24 @@ export default function App() {
                 <span style={{ color: "#999", fontSize: 12 }}>㎡単価 {fmt(uPrice)}/㎡</span>
               </div>
             </div>
+
+            {/* 内訳バーグラフ */}
+            {breakdown.length > 0 && (
+              <div style={{ background: C.white, borderRadius: 4, padding: "14px 16px", marginTop: 12, border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.sub, marginBottom: 10 }}>材料費 内訳</div>
+                {breakdown.map(({ key, name, cost, pct }) => (
+                  <div key={key} style={{ marginBottom: 9 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 3 }}>
+                      <span style={{ fontWeight: 700, color: C.text }}>{name}</span>
+                      <span style={{ color: C.muted }}>{fmt(cost)}<span style={{ marginLeft: 5, fontWeight: 600, color: C.accent }}>{pct}%</span></span>
+                    </div>
+                    <div style={{ height: 7, borderRadius: 4, background: C.borderLt, overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", borderRadius: 4, background: C.accent, transition: "width 0.7s ease" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* アクションボタン */}
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
