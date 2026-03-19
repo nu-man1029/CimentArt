@@ -130,6 +130,182 @@ const CLEAR_OPTIONS = [
   { id: "clearGloss", name: "艶あり" },
 ];
 
+const QUICK_TABLE = [
+  { name: "コンクリートベース（床）", application: "1kg/㎡", dryTime: "4〜6時間/塗布", thickness: "1mm", keys: ["concBase"] },
+  { name: "アクアベース（壁）", application: "1kg/㎡", dryTime: "4〜6時間/塗布", thickness: "0.7〜1mm", keys: ["aquaBase"] },
+  { name: "プライマー", application: "1kg/10〜14㎡", dryTime: "30分/塗布", thickness: "—", keys: ["primer"] },
+  { name: "マイクロストゥック", application: "1kg/1.5㎡", dryTime: "2〜3時間/塗布", thickness: "0.1mm", keys: ["microStucco"] },
+  { name: "アクアクオーツ", application: "1kg/㎡", dryTime: "2〜3時間/塗布", thickness: "0.5mm", keys: ["aquaQuartz"] },
+  { name: "アクアマイクロコンクリート", application: "1kg/㎡", dryTime: "2〜3時間/塗布", thickness: "0.5mm", keys: ["aquaMicro"] },
+  { name: "アクアネイチャー", application: "1〜1.5kg/㎡", dryTime: "4〜6時間/塗布", thickness: "0.7mm", keys: ["aquaNature"] },
+  { name: "メタリック", application: "50g/㎡", dryTime: "40分/塗布", thickness: "0.1mm", keys: ["metallic"] },
+  { name: "シーラー", application: "1L/7〜10㎡", dryTime: "3時間/塗布", thickness: "—", keys: ["sealer"] },
+  { name: "クリア", application: "60〜80g/㎡", dryTime: "3時間/塗布", thickness: "—", keys: ["clearMatte", "clearSemi", "clearGloss"] },
+];
+
+const COLOR_FORMULAS = {
+  microStucco: {
+    title: "STUCCO FINE（1kg あたり）",
+    colors: [
+      { code: "#201", name: "コットン", pigments: {} },
+      { code: "#202", name: "シャドウ", pigments: { BLACK_JS: 4.2 } },
+      { code: "#203", name: "サハラ", pigments: { OCHER_TS: 2.8 } },
+      { code: "#204", name: "スカイ", pigments: { BLUE_LS: 3.4 } },
+      { code: "#205", name: "サファイア", pigments: { BLUE_LS: 50 } },
+      { code: "#206", name: "ディジョン", pigments: { BLACK_JS: 0.6, OCHER_TS: 18, OXIDE_RED_YS: 0.6 } },
+      { code: "#207", name: "カカオ", pigments: { BLACK_JS: 12, OXIDE_RED_YS: 30 } },
+      { code: "#208", name: "クラウド", pigments: { BLACK_JS: 0.4 } },
+      { code: "#209", name: "アメジスト", pigments: { BLUE_LS: 1.4, RED_VS: 1.4 } },
+      { code: "#210", name: "カナリー", pigments: { YELLOW_QS: 6.6 } },
+      { code: "#211", name: "ミント", pigments: { YELLOW_QS: 1.4, GREEN_PS: 1.4 } },
+      { code: "#212", name: "クリーム", pigments: { BROWN_WS: 0.8 } },
+      { code: "#213", name: "グラファイト", pigments: { BLACK_JS: 12.4 } },
+      { code: "#214", name: "ダブ", pigments: { BLACK_JS: 1.6 } },
+      { code: "#215", name: "ルビー", pigments: { RED_VS: 45 } },
+      { code: "#216", name: "タンジェリン", pigments: { ORANGE_US: 13.8 } },
+      { code: "#217", name: "シナモン", pigments: { YELLOW_QS: 2.8, OXIDE_RED_YS: 4 } },
+      { code: "#218", name: "カプチーノ", pigments: { BROWN_WS: 7 } },
+      { code: "#219", name: "ピスタチオ", pigments: { YELLOW_QS: 1.4, OCHER_TS: 1.4, GREEN_PS: 2.8 } },
+      { code: "#220", name: "モカ", pigments: { BLACK_JS: 18, GREEN_PS: 2.8, OXIDE_RED_YS: 20 } },
+      { code: "#221", name: "アルハンブラ", pigments: { BLACK_JS: 0.3, OCHER_TS: 0.9, OXIDE_RED_YS: 0.04 } },
+      { code: "#222", name: "アルミニウム", pigments: { BLACK_JS: 0.1 } },
+      { code: "#223", name: "ベージュ", pigments: { BROWN_WS: 2.1 } },
+      { code: "#224", name: "バター", pigments: { BROWN_WS: 0.3 } },
+      { code: "#225", name: "セメント", pigments: { BLACK_JS: 0.8, BROWN_WS: 1, OXIDE_RED_YS: 0.4 } },
+      { code: "#226", name: "クッキー", pigments: { BLACK_JS: 0.3, OCHER_TS: 2.1, OXIDE_RED_YS: 1 } },
+      { code: "#227", name: "フォッシル", pigments: { BLACK_JS: 0.4, OCHER_TS: 0.9, OXIDE_RED_YS: 0.4 } },
+      { code: "#228", name: "ラテ", pigments: { BLACK_JS: 0.1, OCHER_TS: 1, OXIDE_RED_YS: 0.2 } },
+      { code: "#229", name: "ピーナッツ", pigments: { BLACK_JS: 0.3, OCHER_TS: 0.4, OXIDE_RED_YS: 0.2 } },
+      { code: "#230", name: "セピア", pigments: { BLACK_JS: 0.5, OCHER_TS: 4.2, OXIDE_RED_YS: 0.8 } },
+    ],
+  },
+  aquaQuartz: {
+    title: "AQUA QUARTZ（1kg あたり）",
+    colors: [
+      { code: "#401", name: "スチール", pigments: { BLACK_JS: 3.6, OXIDE_RED_YS: 1 } },
+      { code: "#402", name: "アンスラサイト", pigments: { BLACK_JS: 24.6, OXIDE_RED_YS: 6 } },
+      { code: "#403", name: "サンド", pigments: { OCHER_TS: 1.8 } },
+      { code: "#404", name: "ブルー", pigments: { BLUE_LS: 1.4 } },
+      { code: "#405", name: "ホワイト", pigments: {} },
+      { code: "#406", name: "チョコレート", pigments: { BLACK_JS: 3.6, OXIDE_RED_YS: 12 } },
+      { code: "#407", name: "パールグレイ", pigments: { BLACK_JS: 0.2 } },
+      { code: "#408", name: "ジャスパー", pigments: { BLACK_JS: 0.2, OXIDE_RED_YS: 5 } },
+      { code: "#409", name: "ラベンダー", pigments: { BLUE_LS: 0.8, RED_VS: 0.8 } },
+      { code: "#410", name: "アップル", pigments: { YELLOW_QS: 0.8, GREEN_PS: 0.8 } },
+      { code: "#411", name: "アイボリー", pigments: { OCHER_TS: 0.4, BROWN_WS: 0.8 } },
+      { code: "#412", name: "スレート", pigments: { BLACK_JS: 12.4, OXIDE_RED_YS: 6 } },
+      { code: "#413", name: "シルバー", pigments: { BLACK_JS: 0.8, OXIDE_RED_YS: 0.4 } },
+      { code: "#414", name: "サーモン", pigments: { ORANGE_US: 2.8 } },
+      { code: "#415", name: "シェンナ", pigments: { YELLOW_QS: 0.3, OCHER_TS: 0.3, OXIDE_RED_YS: 0.4 } },
+      { code: "#416", name: "テラコッタ", pigments: { BLACK_JS: 0.3, OXIDE_RED_YS: 10 } },
+      { code: "#417", name: "タスカン", pigments: { YELLOW_QS: 1.4, OXIDE_RED_YS: 2 } },
+      { code: "#418", name: "トラバーチン", pigments: { OCHER_TS: 1.8, BROWN_WS: 4.2 } },
+      { code: "#419", name: "タンドラ", pigments: { OCHER_TS: 1.8, BROWN_WS: 0.4, OXIDE_RED_YS: 0.8 } },
+      { code: "#420", name: "ワイン", pigments: { BLACK_JS: 0.6, BLUE_LS: 1.4, RED_VS: 4 } },
+    ],
+  },
+  aquaMicro: {
+    title: "AQUA MICROCONCRETE（1kg あたり）",
+    colors: [
+      { code: "#601", name: "アクアマリン", pigments: { YELLOW_QS: 0.2, GREEN_PS: 0.2 } },
+      { code: "#602", name: "サンド", pigments: { OCHER_TS: 1.8 } },
+      { code: "#603", name: "バサルト", pigments: { BLACK_JS: 2.4, OXIDE_RED_YS: 0.4 } },
+      { code: "#604", name: "カーキ", pigments: { BROWN_WS: 3.5 } },
+      { code: "#605", name: "ライトブルー", pigments: { BLUE_LS: 1.4 } },
+      { code: "#606", name: "アッシュ", pigments: { BLACK_JS: 0.2 } },
+      { code: "#607", name: "ナクレ", pigments: {} },
+      { code: "#608", name: "ナット", pigments: { YELLOW_QS: 0.6, OXIDE_RED_YS: 1 } },
+      { code: "#609", name: "オーキッド", pigments: { BLUE_LS: 0.2, RED_VS: 0.2 } },
+      { code: "#610", name: "スレート", pigments: { BLACK_JS: 12 } },
+      { code: "#611", name: "プラチナ", pigments: { BLACK_JS: 0.6 } },
+      { code: "#612", name: "シルク", pigments: { BROWN_WS: 1 } },
+      { code: "#613", name: "オータムン", pigments: { BLACK_JS: 1.2, OCHER_TS: 9, OXIDE_RED_YS: 4 } },
+      { code: "#614", name: "バレリーナ", pigments: { YELLOW_QS: 0.3, OXIDE_RED_YS: 0.4 } },
+      { code: "#615", name: "ブルー", pigments: { BLUE_LS: 1.4 } },
+      { code: "#616", name: "シナモン", pigments: { BLACK_JS: 0.3, OCHER_TS: 2.2, OXIDE_RED_YS: 1 } },
+      { code: "#617", name: "コールドグレー", pigments: { BLACK_JS: 3.1, BROWN_WS: 4.2, OXIDE_RED_YS: 2 } },
+      { code: "#618", name: "クリーム", pigments: { BROWN_WS: 0.7 } },
+      { code: "#619", name: "ドルフィン", pigments: { BLACK_JS: 0.5, OCHER_TS: 0.36, OXIDE_RED_YS: 0.2 } },
+      { code: "#620", name: "デューン", pigments: { OCHER_TS: 0.5, BROWN_WS: 0.3, OXIDE_RED_YS: 0.3 } },
+      { code: "#621", name: "フレッシュグレー", pigments: { BLACK_JS: 1, OCHER_TS: 0.9, OXIDE_RED_YS: 0.6 } },
+      { code: "#622", name: "グレー 1N", pigments: { BLACK_JS: 0.1, OCHER_TS: 0.26, OXIDE_RED_YS: 0.1 } },
+      { code: "#623", name: "ヘーゼルナッツ", pigments: { OCHER_TS: 0.7, BROWN_WS: 0.4, OXIDE_RED_YS: 0.5, GREEN_PS: 0.2 } },
+      { code: "#624", name: "ジェイド", pigments: { BLACK_JS: 0.26, OCHER_TS: 0.9, OXIDE_RED_YS: 0.04 } },
+      { code: "#625", name: "リード", pigments: { BLACK_JS: 2.5, OCHER_TS: 0.2, OXIDE_RED_YS: 1.5 } },
+      { code: "#626", name: "ライムストーン", pigments: { BLACK_JS: 0.26, OCHER_TS: 0.36, OXIDE_RED_YS: 0.2 } },
+      { code: "#627", name: "ミンク", pigments: { BLACK_JS: 0.1, OCHER_TS: 1, OXIDE_RED_YS: 0.2 } },
+      { code: "#628", name: "ムーングレー", pigments: { BLACK_JS: 0.4, OCHER_TS: 0.9, OXIDE_RED_YS: 0.4 } },
+      { code: "#629", name: "マウス", pigments: { BLACK_JS: 0.2, OCHER_TS: 0.2, OXIDE_RED_YS: 0.2 } },
+      { code: "#630", name: "オーシャン", pigments: { BLACK_JS: 7.4, BLUE_LS: 2.1, OCHER_TS: 0.5 } },
+      { code: "#631", name: "ピスタチオ", pigments: { BLACK_JS: 0.5, OCHER_TS: 1.8, OXIDE_RED_YS: 0.08 } },
+      { code: "#632", name: "サンドストーン", pigments: { BLACK_JS: 0.5, OCHER_TS: 4.3, OXIDE_RED_YS: 0.8 } },
+      { code: "#633", name: "スモーク", pigments: { BLACK_JS: 0.8, BROWN_WS: 1, OXIDE_RED_YS: 0.5 } },
+    ],
+  },
+  aquaNature: {
+    title: "AQUA NATURE（1kg あたり）",
+    colors: [
+      { code: "#501", name: "スチール", pigments: { BLACK_JS: 1.8, OXIDE_RED_YS: 0.5 } },
+      { code: "#502", name: "アンスラサイト", pigments: { BLACK_JS: 12.3, OXIDE_RED_YS: 3 } },
+      { code: "#503", name: "サンド", pigments: { OCHER_TS: 0.9 } },
+      { code: "#504", name: "ブルー", pigments: { BLUE_LS: 0.7 } },
+      { code: "#505", name: "ホワイト", pigments: {} },
+      { code: "#506", name: "チョコレート", pigments: { BLACK_JS: 1.8, OXIDE_RED_YS: 6 } },
+      { code: "#507", name: "パールグレイ", pigments: { BLACK_JS: 0.1 } },
+      { code: "#508", name: "ジャスパー", pigments: { BLACK_JS: 0.1, OXIDE_RED_YS: 2.5 } },
+      { code: "#509", name: "ラベンダー", pigments: { BLUE_LS: 0.4, RED_VS: 0.4 } },
+      { code: "#510", name: "アップル", pigments: { YELLOW_QS: 0.4, GREEN_PS: 0.4 } },
+      { code: "#511", name: "アイボリー", pigments: { OCHER_TS: 0.2, BROWN_WS: 0.4 } },
+      { code: "#512", name: "スレート", pigments: { BLACK_JS: 6.2, OXIDE_RED_YS: 3 } },
+      { code: "#513", name: "シルバー", pigments: { BLACK_JS: 0.4, OXIDE_RED_YS: 0.2 } },
+      { code: "#514", name: "サーモン", pigments: { ORANGE_US: 1.4 } },
+      { code: "#515", name: "シェンナ", pigments: { YELLOW_QS: 0.2, OCHER_TS: 0.2, OXIDE_RED_YS: 0.3 } },
+      { code: "#516", name: "テラコッタ", pigments: { BLACK_JS: 0.2, OXIDE_RED_YS: 5 } },
+      { code: "#517", name: "タスカン", pigments: { YELLOW_QS: 0.7, OXIDE_RED_YS: 1 } },
+      { code: "#518", name: "トラバーチン", pigments: { OCHER_TS: 0.9, BROWN_WS: 2.1 } },
+      { code: "#519", name: "タンドラ", pigments: { OCHER_TS: 0.9, BROWN_WS: 0.2, OXIDE_RED_YS: 0.4 } },
+      { code: "#520", name: "ワイン", pigments: { BLACK_JS: 0.3, BLUE_LS: 0.7, RED_VS: 2 } },
+    ],
+  },
+  aquaStone: {
+    title: "AQUA STONE / Resin（1kg あたり）",
+    colors: [
+      { code: "#801", name: "ホワイト", pigments: {} },
+      { code: "#802", name: "パールグレイ", pigments: { BLACK_JS: 0.6 } },
+      { code: "#803", name: "シルバー", pigments: { BLACK_JS: 3 } },
+      { code: "#804", name: "スチール", pigments: { BLACK_JS: 8.6 } },
+      { code: "#805", name: "スレート", pigments: { BLACK_JS: 24.6 } },
+      { code: "#806", name: "アイボリー", pigments: { BROWN_WS: 2.8 } },
+      { code: "#807", name: "バニラ", pigments: { OCHER_TS: 1.5 } },
+      { code: "#808", name: "トラバーチン", pigments: { BROWN_WS: 14 } },
+      { code: "#809", name: "シェンナ", pigments: { YELLOW_QS: 1.4, OCHER_TS: 1.4, OXIDE_RED_YS: 2 } },
+      { code: "#810", name: "タスカン", pigments: { YELLOW_QS: 5.6, OXIDE_RED_YS: 8 } },
+      { code: "#811", name: "サンド", pigments: { OCHER_TS: 5.4 } },
+      { code: "#812", name: "アルベロ", pigments: { OCHER_TS: 12.6 } },
+      { code: "#813", name: "マンゴー", pigments: { OCHER_TS: 9, OXIDE_RED_YS: 2 } },
+      { code: "#814", name: "キャラメル", pigments: { OCHER_TS: 36, OXIDE_RED_YS: 1 } },
+      { code: "#815", name: "タンドラ", pigments: { OCHER_TS: 5.4, BROWN_WS: 1.4, OXIDE_RED_YS: 2 } },
+      { code: "#816", name: "ジャスパー", pigments: { BLACK_JS: 1.2, OXIDE_RED_YS: 30 } },
+      { code: "#817", name: "テラコッタ", pigments: { BLACK_JS: 2.5, OXIDE_RED_YS: 60 } },
+      { code: "#818", name: "コーラル", pigments: { OXIDE_RED_YS: 20 } },
+      { code: "#819", name: "ウェンジ", pigments: { BLACK_JS: 37, GREEN_PS: 5.6, OXIDE_RED_YS: 40 } },
+      { code: "#820", name: "ペールピンク", pigments: { RED_VS: 1.4 } },
+    ],
+  },
+};
+
+const PIGMENT_COLUMNS = [
+  { key: "BLACK_JS", label: "BLACK JS" },
+  { key: "BLUE_LS", label: "BLUE LS" },
+  { key: "YELLOW_QS", label: "YELLOW QS" },
+  { key: "OCHER_TS", label: "OCHER TS" },
+  { key: "GREEN_PS", label: "GREEN PS" },
+  { key: "BROWN_WS", label: "BROWN WS" },
+  { key: "ORANGE_US", label: "ORANGE US" },
+  { key: "OXIDE_RED_YS", label: "OXIDE RED YS" },
+  { key: "RED_VS", label: "RED VS" },
+];
+
 function getWorkflow(finish, surface, clearType) {
   const steps = [];
   steps.push("primer");
@@ -149,7 +325,7 @@ function getWorkflow(finish, surface, clearType) {
 function autoOptimize(materialKey, area) {
   const mat = MATERIALS[materialKey];
   if (!mat) return [];
-  if (mat.perBase) return [{ sizeIdx: 0, qty: 1 }];
+  if (mat.perBase) return [{ sizeIdx: 0, qty: 0 }]; // qty will be overridden by linked base
   const sizes = mat.sizes;
   if (sizes.length === 1) {
     const s = sizes[0];
@@ -265,12 +441,12 @@ function MaterialCard({ materialKey, autoSel, manualSel, onManualChange, area })
               {item.totalCov != null ? `${item.coverage}㎡/個 × ${item.qty}個 = ${item.totalCov.toFixed(1)}㎡` : `${fmt(item.price)}/個 × ${item.qty}個`}
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <button onClick={() => isM && (() => { const u = [...sel]; u[idx] = { ...u[idx], qty: Math.max(1, u[idx].qty - 1) }; onManualChange(materialKey, u); })()}
-                disabled={!isM || item.qty <= 1}
+              <button onClick={() => isM && (() => { const u = [...sel]; u[idx] = { ...u[idx], qty: Math.max(0, u[idx].qty - 1) }; onManualChange(materialKey, u); })()}
+                disabled={!isM || item.qty <= 0}
                 style={{
                   width: 26, height: 26, borderRadius: 3, border: `1px solid ${C.border}`,
-                  background: (!isM || item.qty <= 1) ? C.borderLt : C.white,
-                  cursor: (!isM || item.qty <= 1) ? "default" : "pointer",
+                  background: (!isM || item.qty <= 0) ? C.borderLt : C.white,
+                  cursor: (!isM || item.qty <= 0) ? "default" : "pointer",
                   fontSize: 15, color: C.muted, display: "flex", alignItems: "center", justifyContent: "center",
                 }}>−</button>
               <span style={{ width: 26, textAlign: "center", fontWeight: 700, fontSize: 14 }}>{item.qty}</span>
@@ -460,6 +636,138 @@ function ReferencePanel({ open, onClose }) {
   );
 }
 
+/* ━━━ QuickTablePanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function QuickTablePanel({ open, onClose, activeFinish }) {
+  if (!open) return null;
+  const th = { padding: "7px 10px", fontWeight: 600, fontSize: 11, color: C.muted, borderBottom: `2px solid ${C.border}`, letterSpacing: ".3px" };
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 780, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px" }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 24px 14px", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, background: C.white, zIndex: 1 }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>CimentArt 早見表</h2>
+          <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", background: C.borderLt, fontSize: 14, cursor: "pointer", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        </div>
+        <div style={{ padding: "16px 20px 24px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <thead><tr style={{ background: C.bg }}>
+              <th style={{ ...th, textAlign: "left" }}>材料</th>
+              <th style={{ ...th, textAlign: "center" }}>塗布量</th>
+              <th style={{ ...th, textAlign: "center" }}>乾燥時間</th>
+              <th style={{ ...th, textAlign: "center" }}>厚み</th>
+            </tr></thead>
+            <tbody>
+              {QUICK_TABLE.map((row) => {
+                const isActive = row.keys.includes(activeFinish);
+                return (
+                  <tr key={row.name} style={{
+                    borderBottom: `1px solid ${C.borderLt}`,
+                    background: isActive ? C.accentLt : "transparent",
+                  }}>
+                    <td style={{ padding: "8px 10px", fontWeight: isActive ? 700 : 600, color: isActive ? C.accentDk : C.text }}>
+                      {isActive && <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: C.accent, marginRight: 6, verticalAlign: "middle" }} />}
+                      {row.name}
+                    </td>
+                    <td style={{ padding: "8px 10px", textAlign: "center", color: C.sub }}>{row.application}</td>
+                    <td style={{ padding: "8px 10px", textAlign: "center", color: C.sub }}>{row.dryTime}</td>
+                    <td style={{ padding: "8px 10px", textAlign: "center", color: C.sub }}>{row.thickness}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ marginTop: 12, fontSize: 11, color: C.muted, lineHeight: 1.6 }}>
+            ※ 乾燥時間は気温20度の場合。クリア乾燥: GLOSS 8〜12h / SATIN 6〜12h / MATT 4〜8h
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ━━━ ColorFormulaPanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const COLOR_FORMULA_TABS = [
+  { key: "microStucco", label: "マイクロストゥック" },
+  { key: "aquaQuartz", label: "アクアクオーツ" },
+  { key: "aquaMicro", label: "アクアマイクロコンクリート" },
+  { key: "aquaNature", label: "アクアネイチャー" },
+  { key: "aquaStone", label: "アクアストーン" },
+];
+
+function ColorFormulaPanel({ open, onClose, activeFinish }) {
+  const [tab, setTab] = useState(activeFinish && COLOR_FORMULAS[activeFinish] ? activeFinish : "microStucco");
+  if (!open) return null;
+  const data = COLOR_FORMULAS[tab];
+  // 使用されている顔料カラムのみ表示
+  const usedCols = PIGMENT_COLUMNS.filter((col) =>
+    data.colors.some((c) => c.pigments[col.key])
+  );
+  const th = { padding: "5px 7px", fontWeight: 600, fontSize: 10, color: C.muted, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap", letterSpacing: ".2px" };
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,.35)", display: "flex", justifyContent: "center", alignItems: "flex-end" }} onClick={onClose}>
+      <div style={{ background: C.white, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 900, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 -4px 20px rgba(0,0,0,.1)" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px", flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 24px 14px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>カラー配合表</h2>
+          <button onClick={onClose} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", background: C.borderLt, fontSize: 14, cursor: "pointer", color: C.sub, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        </div>
+        {/* タブ */}
+        <div style={{ display: "flex", gap: 0, padding: "0 20px", borderBottom: `1px solid ${C.border}`, overflowX: "auto", flexShrink: 0 }}>
+          {COLOR_FORMULA_TABS.map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)} style={{
+              padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer",
+              fontSize: 12, fontWeight: tab === t.key ? 700 : 500,
+              color: tab === t.key ? C.accent : C.sub,
+              borderBottom: tab === t.key ? `2px solid ${C.accent}` : "2px solid transparent",
+              whiteSpace: "nowrap", flexShrink: 0,
+            }}>{t.label}</button>
+          ))}
+        </div>
+        {/* テーブル */}
+        <div style={{ overflowY: "auto", flex: 1, padding: "12px 16px 24px" }}>
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 8 }}>{data.title} — 顔料配合量（g）</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ borderCollapse: "collapse", fontSize: 11, minWidth: "100%" }}>
+              <thead><tr style={{ background: C.bg }}>
+                <th style={{ ...th, textAlign: "center", minWidth: 52 }}>No.</th>
+                <th style={{ ...th, textAlign: "left", minWidth: 90 }}>カラー名</th>
+                {usedCols.map((col) => (
+                  <th key={col.key} style={{ ...th, textAlign: "right", minWidth: 60 }}>{col.label}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {data.colors.map((color) => (
+                  <tr key={color.code} style={{ borderBottom: `1px solid ${C.borderLt}` }}>
+                    <td style={{ padding: "6px 7px", textAlign: "center", color: C.muted, fontWeight: 600, fontSize: 11 }}>{color.code}</td>
+                    <td style={{ padding: "6px 7px", fontWeight: 600, color: C.text, whiteSpace: "nowrap" }}>{color.name}</td>
+                    {usedCols.map((col) => {
+                      const val = color.pigments[col.key];
+                      return (
+                        <td key={col.key} style={{
+                          padding: "6px 7px", textAlign: "right",
+                          background: val ? C.accentLt : "transparent",
+                          color: val ? C.accentDk : C.borderLt,
+                          fontWeight: val ? 700 : 400,
+                        }}>
+                          {val != null ? val : "—"}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ━━━ MAIN APP ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 export default function App() {
   const [projectName, setProjectName] = useState("");
@@ -471,6 +779,8 @@ export default function App() {
   const [manual, setManual] = useState({});
   const [done, setDone] = useState(false);
   const [showRef, setShowRef] = useState(false);
+  const [showQuick, setShowQuick] = useState(false);
+  const [showColor, setShowColor] = useState(false);
 
   const sqm = parseFloat(area) || 0;
   const fDef = FINISH_OPTIONS.find((f) => f.id === finish);
@@ -479,7 +789,13 @@ export default function App() {
   const workflow = useMemo(() => getWorkflow(finish, surf, clearType), [finish, surf, clearType]);
   const autoSel = useMemo(() => {
     if (sqm <= 0) return {};
-    const r = {}; workflow.forEach((k) => { r[k] = autoOptimize(k, sqm); }); return r;
+    const r = {}; workflow.forEach((k) => { r[k] = autoOptimize(k, sqm); });
+    // レジンの個数をコンクリートベースの個数に連動
+    if (r.resin && r.concBase) {
+      const concQty = r.concBase.reduce((s, item) => s + item.qty, 0);
+      r.resin = [{ sizeIdx: 0, qty: concQty }];
+    }
+    return r;
   }, [sqm, workflow]);
 
   const handleManual = useCallback((k, v) => {
@@ -513,11 +829,23 @@ export default function App() {
             </h1>
             <p style={{ margin: "2px 0 0", fontSize: 11, color: C.muted }}>Cement Artist Nu☆Man — 現場別コスト算出ツール</p>
           </div>
-          <button onClick={() => setShowRef(true)} style={{
-            padding: "8px 14px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
-            background: C.white, color: C.accent, fontSize: 12, fontWeight: 700,
-            cursor: "pointer", whiteSpace: "nowrap",
-          }}>単価表を見る</button>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <button onClick={() => setShowColor(true)} style={{
+              padding: "7px 11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
+              background: C.accentLt, color: C.accentDk, fontSize: 11, fontWeight: 700,
+              cursor: "pointer", whiteSpace: "nowrap",
+            }}>カラー配合表</button>
+            <button onClick={() => setShowQuick(true)} style={{
+              padding: "7px 11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
+              background: C.accentLt, color: C.accentDk, fontSize: 11, fontWeight: 700,
+              cursor: "pointer", whiteSpace: "nowrap",
+            }}>早見表</button>
+            <button onClick={() => setShowRef(true)} style={{
+              padding: "7px 11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
+              background: C.white, color: C.accent, fontSize: 11, fontWeight: 700,
+              cursor: "pointer", whiteSpace: "nowrap",
+            }}>単価表</button>
+          </div>
         </div>
       </div>
 
@@ -655,6 +983,8 @@ export default function App() {
       </div>
 
       <ReferencePanel open={showRef} onClose={() => setShowRef(false)} />
+      <QuickTablePanel open={showQuick} onClose={() => setShowQuick(false)} activeFinish={finish} />
+      <ColorFormulaPanel open={showColor} onClose={() => setShowColor(false)} activeFinish={finish} />
     </div>
   );
 }
