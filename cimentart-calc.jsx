@@ -455,7 +455,7 @@ const C = {
 };
 
 /* ━━━ MaterialCard ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function MaterialCard({ materialKey, index = 0, autoSel, manualSel, onManualChange, area, note = "", onNoteChange = () => {} }) {
+function MaterialCard({ materialKey, index = 0, autoSel, manualSel, onManualChange, area, note = "", onNoteChange = () => {}, onAddSurplus = () => {} }) {
   const mat = MATERIALS[materialKey];
   if (!mat) return null;
   const isM = !!manualSel;
@@ -592,6 +592,12 @@ function MaterialCard({ materialKey, index = 0, autoSel, manualSel, onManualChan
                 <div style={{ fontSize: 13, fontWeight: 700, color: C.accent }}>{surplusCov.toFixed(1)}㎡</div>
                 <div style={{ fontSize: 10, color: C.muted }}>残存価値 {fmt(surplusVal)}</div>
               </div>
+            </div>
+            <div style={{ marginTop: 8, textAlign: "right" }}>
+              <button onClick={() => onAddSurplus(materialKey, surplusCov, surplusVal)} style={{
+                padding: "4px 12px", borderRadius: 3, border: "1.5px solid #3d7a58",
+                background: "#3d7a58", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer",
+              }}>+ 在庫に追加</button>
             </div>
           </div>
         );
@@ -1527,6 +1533,7 @@ function SidebarPricePanel({ workflow, manualNotes, adjLog, onAddLog, inventory,
           </div>
         </div>
       </div>
+      <InventoryPanel inventory={inventory} onChange={onInventoryChange} />
     </div>
   );
 }
@@ -1558,6 +1565,32 @@ export default function App() {
   const [saveMsg, setSaveMsg] = useState("");
   const [manualNotes, setManualNotes] = useState({});
   const [adjLog, setAdjLog] = useState([]);
+  const [inventory, setInventory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('ca_inventory') || '{}'); }
+    catch { return {}; }
+  });
+  const handleInventoryChange = (next) => {
+    setInventory(next);
+    localStorage.setItem('ca_inventory', JSON.stringify(next));
+  };
+  const handleAddSurplus = (materialKey, surplusArea, surplusValue) => {
+    const mat = MATERIALS[materialKey];
+    setInventory((prev) => {
+      const existing = prev[materialKey] || { remainingArea: 0, estimatedValue: 0 };
+      const next = {
+        ...prev,
+        [materialKey]: {
+          name: mat?.name || materialKey,
+          remainingArea: Math.round((existing.remainingArea + surplusArea) * 10) / 10,
+          estimatedValue: Math.round(existing.estimatedValue + surplusValue),
+          updatedAt: new Date().toLocaleDateString('ja-JP'),
+          note: existing.note || "",
+        }
+      };
+      localStorage.setItem('ca_inventory', JSON.stringify(next));
+      return next;
+    });
+  };
 
   const handleManualNote = useCallback((k, v) => {
     setManualNotes((p) => ({ ...p, [k]: v }));
@@ -1951,7 +1984,7 @@ export default function App() {
             </h3>
 
             {workflow.map((k, idx) => (
-              <MaterialCard key={k} materialKey={k} index={idx} autoSel={autoSel[k] || []} manualSel={manual[k] || null} onManualChange={handleManual} area={sqm} note={manualNotes[k] || ""} onNoteChange={handleManualNote} />
+              <MaterialCard key={k} materialKey={k} index={idx} autoSel={autoSel[k] || []} manualSel={manual[k] || null} onManualChange={handleManual} area={sqm} note={manualNotes[k] || ""} onNoteChange={handleManualNote} onAddSurplus={handleAddSurplus} />
             ))}
 
             <PigmentSelector pigs={pigments} onChange={setPigments} />
@@ -2112,6 +2145,8 @@ export default function App() {
               manualNotes={manualNotes}
               adjLog={adjLog}
               onAddLog={addAdjLog}
+              inventory={inventory}
+              onInventoryChange={handleInventoryChange}
             />
           </div>
         )}
