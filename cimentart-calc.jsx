@@ -1201,6 +1201,32 @@ function QuickTablePanel({ open, onClose, activeFinish }) {
   );
 }
 
+/* ━━━ カラー配合からスウォッチ色を計算 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const PIGMENT_BASE = {
+  BLACK_JS:    { rgb: [22, 20, 20], sat: 18 },
+  BLUE_LS:     { rgb: [28, 72, 188], sat: 38 },
+  YELLOW_QS:   { rgb: [238, 208, 18], sat: 7 },
+  OCHER_TS:    { rgb: [198, 148, 42], sat: 16 },
+  GREEN_PS:    { rgb: [52, 128, 52], sat: 4 },
+  BROWN_WS:    { rgb: [142, 86, 30], sat: 7 },
+  ORANGE_US:   { rgb: [228, 100, 18], sat: 13 },
+  OXIDE_RED_YS:{ rgb: [178, 46, 22], sat: 24 },
+  RED_VS:      { rgb: [198, 20, 28], sat: 38 },
+};
+
+function computeSwatchColor(pigments) {
+  let r = 244, g = 239, b = 230; // セメントベース（オフホワイト）
+  Object.entries(pigments).forEach(([key, amt]) => {
+    if (!amt || !PIGMENT_BASE[key]) return;
+    const { rgb, sat } = PIGMENT_BASE[key];
+    const s = 1 - Math.exp(-amt / sat * 1.5);
+    r = r + (rgb[0] - r) * s;
+    g = g + (rgb[1] - g) * s;
+    b = b + (rgb[2] - b) * s;
+  });
+  return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+}
+
 /* ━━━ ColorFormulaPanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const COLOR_FORMULA_TABS = [
   { key: "microStucco", label: "マイクロストゥック" },
@@ -1248,15 +1274,27 @@ function ColorFormulaPanel({ open, onClose, activeFinish }) {
             <table style={{ borderCollapse: "collapse", fontSize: 11, minWidth: "100%" }}>
               <thead><tr style={{ background: C.bg }}>
                 <th style={{ ...th, textAlign: "center", minWidth: 52 }}>No.</th>
+                <th style={{ ...th, textAlign: "center", minWidth: 36 }}>色見本</th>
                 <th style={{ ...th, textAlign: "left", minWidth: 90 }}>カラー名</th>
                 {usedCols.map((col) => (
                   <th key={col.key} style={{ ...th, textAlign: "right", minWidth: 60 }}>{col.label}</th>
                 ))}
               </tr></thead>
               <tbody>
-                {data.colors.map((color) => (
+                {data.colors.map((color) => {
+                  const swatchColor = computeSwatchColor(color.pigments);
+                  return (
                   <tr key={color.code} style={{ borderBottom: `1px solid ${C.borderLt}` }}>
                     <td style={{ padding: "6px 7px", textAlign: "center", color: C.muted, fontWeight: 600, fontSize: 11 }}>{color.code}</td>
+                    <td style={{ padding: "4px 6px", textAlign: "center" }}>
+                      <div style={{
+                        width: 28, height: 20, borderRadius: 4,
+                        background: swatchColor,
+                        border: "1px solid rgba(0,0,0,.12)",
+                        boxShadow: "inset 0 1px 2px rgba(255,255,255,.4)",
+                        margin: "0 auto",
+                      }} title={color.name} />
+                    </td>
                     <td style={{ padding: "6px 7px", fontWeight: 600, color: C.text, whiteSpace: "nowrap" }}>{color.name}</td>
                     {usedCols.map((col) => {
                       const val = color.pigments[col.key];
@@ -1272,7 +1310,8 @@ function ColorFormulaPanel({ open, onClose, activeFinish }) {
                       );
                     })}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
