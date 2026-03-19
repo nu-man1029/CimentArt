@@ -685,7 +685,58 @@ function PigmentSelector({ pigs, onChange }) {
 }
 
 /* ━━━ PDF出力 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function printEstimate({ projectName, sqm, finish, surf, clearType, workflow, autoSel, manual, pigments, matTotal, pigTotal, grand, uPrice, memo = "", laborCost = 0, taxIncl = false, estNo = "" }) {
+function printInventory(inventory) {
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}`;
+  const mats = Object.entries(inventory).filter(([, v]) => v && v.remainingArea > 0);
+  const rows = mats.map(([, item]) =>
+    `<tr>
+      <td>${item.name}</td>
+      <td style="text-align:right;font-weight:700">${item.remainingArea.toFixed(1)}㎡</td>
+      <td style="text-align:right">¥${item.estimatedValue.toLocaleString()}</td>
+      <td>${item.note || "—"}</td>
+      <td style="color:#999">${item.updatedAt || "—"}</td>
+    </tr>`
+  ).join("");
+  const totalArea = mats.reduce((s, [, v]) => s + v.remainingArea, 0);
+  const totalValue = mats.reduce((s, [, v]) => s + v.estimatedValue, 0);
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8">
+<title>${dateStr}_在庫一覧表_CimentArt</title>
+<style>
+  body { font-family: "Noto Sans JP","Hiragino Sans",sans-serif; color: #1a1a1a; margin: 0; padding: 24px; font-size: 13px; }
+  h1 { font-size: 20px; color: #8b7355; margin: 0 0 4px; }
+  .sub { color: #999; font-size: 11px; margin: 0 0 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #f7f6f4; padding: 7px 10px; font-weight: 600; color: #999; font-size: 11px; border-bottom: 2px solid #e0ddd8; text-align: left; }
+  td { padding: 7px 10px; border-bottom: 1px solid #f0eeea; }
+  .total-box { margin-top: 16px; border: 2px solid #3d7a58; border-radius: 4px; padding: 16px; background: #f0f7f2; display: flex; justify-content: space-between; }
+  .total-item { text-align: center; }
+  .total-label { font-size: 11px; color: #555; margin-bottom: 4px; }
+  .total-val { font-size: 20px; font-weight: 800; color: #3d7a58; }
+  .footer { margin-top: 24px; font-size: 10px; color: #bbb; border-top: 1px solid #e0ddd8; padding-top: 10px; }
+  @media print { body { padding: 12px; } }
+</style></head><body>
+<h1>CimentArt 在庫一覧表</h1>
+<p class="sub">Cement Artist Nu☆Man（株式会社KENSIN） — ${today.toLocaleDateString("ja-JP")}</p>
+<table>
+  <thead><tr><th>材料名</th><th style="text-align:right">残り㎡</th><th style="text-align:right">残存価値（概算）</th><th>メモ</th><th>更新日</th></tr></thead>
+  <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:#999;padding:20px">在庫なし</td></tr>'}</tbody>
+</table>
+<div class="total-box">
+  <div class="total-item"><div class="total-label">合計残り㎡</div><div class="total-val">${totalArea.toFixed(1)}㎡</div></div>
+  <div class="total-item"><div class="total-label">残存価値合計（概算）</div><div class="total-val">¥${totalValue.toLocaleString()}</div></div>
+</div>
+<div class="footer">※残存価値は購入時の按分による概算です。実際の価値とは異なる場合があります。</div>
+</body></html>`;
+  const w = window.open("", "_blank");
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 500);
+}
+
+function printEstimate({ projectName, sqm, finish, surf, clearType, workflow, autoSel, manual, pigments, matTotal, pigTotal, grand, uPrice, memo = "", laborCost = 0, taxIncl = false, estNo = "", surplusInfo = null }) {
   const today = new Date();
   const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}`;
   const finishName = FINISH_OPTIONS.find((f) => f.id === finish)?.name || finish;
@@ -762,7 +813,7 @@ function printEstimate({ projectName, sqm, finish, surf, clearType, workflow, au
 <div class="info-grid">
   <div class="info-box"><div class="label">現場名</div><div class="value" style="font-size:14px">${projectName || "—"}</div></div>
   <div class="info-box"><div class="label">施工面積</div><div class="value">${sqm}㎡</div></div>
-  <div class="info-box"><div class="label">㎡単価（材料費）</div><div class="value accent">${fT(uPrice)}/㎡</div></div>
+  <div class="info-box"><div class="label">㎡単価（実質材料費）</div><div class="value accent">${fT(uPrice)}/㎡</div></div>
 </div>
 ${memo ? `<div style="background:#f7f6f4;border-left:3px solid #8b7355;padding:8px 12px;font-size:11px;color:#555;margin-bottom:16px;border-radius:0 4px 4px 0"><strong>現場メモ：</strong>${memo}</div>` : ""}
 
@@ -790,13 +841,15 @@ ${pigRows ? `<div class="section-title">顔料</div>
 </table>` : ""}
 
 <div class="total-box">
-  <div class="total-row"><span>材料費</span><span>${fT(matTotal)}</span></div>
+  <div class="total-row"><span>材料費（購入合計）</span><span>${fT(matTotal)}</span></div>
+  ${surplusInfo ? `<div class="total-row" style="color:#3d7a58;font-size:12px"><span>うちこの現場の実質費用</span><span>${fT(surplusInfo.jobCost)}</span></div><div class="total-row" style="color:#c9a96e;font-size:12px"><span>余り材料残存価値</span><span>+${fT(surplusInfo.totalSurplusVal)}</span></div>` : ""}
   ${pigTotal > 0 ? `<div class="total-row"><span>顔料</span><span>${fT(pigTotal)}</span></div>` : ""}
   ${labor > 0 ? `<div class="total-row"><span>施工費・諸経費</span><span>${fT(labor)}</span></div>` : ""}
   <div class="total-row" style="border-top:1px solid #c9a96e;padding-top:10px;margin-top:6px;font-weight:800">
     <span>合計${taxIncl ? "（税込10%）" : "（税抜）"}</span><span class="grand">${fT(totalWithLabor)}</span>
   </div>
-  <div style="text-align:right;font-size:11px;color:#8b7355;margin-top:4px">㎡単価 ${fT(labor > 0 ? Math.round(totalWithLabor / sqm) : uPrice)}/㎡${labor > 0 ? "（施工込）" : ""}</div>
+  ${surplusInfo ? `<div class="total-row" style="color:#3d7a58;font-size:13px;font-weight:700"><span>この現場の実質材料費</span><span>${fT(surplusInfo.jobCost + pigTotal)}</span></div>` : ""}
+  <div style="text-align:right;font-size:11px;color:#8b7355;margin-top:4px">㎡単価（実質）${fT(labor > 0 ? Math.round(totalWithLabor / sqm) : uPrice)}/㎡${labor > 0 ? "（施工込）" : ""}</div>
 </div>
 
 <div class="footer">※数量は自動最適化による概算です。${!taxIncl ? "消費税は含みません。" : ""}本見積の有効期限は発行日より30日間です。</div>
@@ -1388,9 +1441,14 @@ function InventoryPanel({ inventory, onChange }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>在庫一覧表</div>
           <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>余り材料の在庫管理（手入力で調整可）</div>
         </div>
-        {mats.length > 0 && (
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#3d7a58", background: "#e8f5e9", padding: "2px 8px", borderRadius: 10 }}>{mats.length}品目</span>
-        )}
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {mats.length > 0 && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#3d7a58", background: "#e8f5e9", padding: "2px 8px", borderRadius: 10 }}>{mats.length}品目</span>
+          )}
+          {mats.length > 0 && (
+            <button onClick={() => printInventory(inventory)} style={{ padding: "3px 9px", borderRadius: 3, border: "1.5px solid #3d7a58", background: "#3d7a58", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>PDF</button>
+          )}
+        </div>
       </div>
       <div style={{ padding: "10px 14px 14px" }}>
         {mats.length === 0 ? (
@@ -1723,7 +1781,7 @@ export default function App() {
 
   const pigTotal = pigments.reduce((s, sp) => { const p = PIGMENTS.find((x) => x.id === sp.id); return s + (p ? p.sizes[sp.sizeIdx].price * sp.qty : 0); }, 0);
   const grand = matTotal + pigTotal;
-  const uPrice = sqm > 0 ? Math.round(grand / sqm) : 0;
+  const uPrice = sqm > 0 ? Math.round((surplusInfo ? (surplusInfo.jobCost + pigTotal) : grand) / sqm) : 0;
   const tx = taxIncl ? 1.1 : 1;
   const fmtT = (v) => fmt(Math.round(v * tx));
 
@@ -2094,7 +2152,7 @@ export default function App() {
 
             {/* アクションボタン */}
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={() => printEstimate({ projectName, sqm, finish, surf, clearType, workflow, autoSel, manual, pigments, matTotal, pigTotal, grand, uPrice, memo, laborCost, taxIncl })}
+              <button onClick={() => printEstimate({ projectName, sqm, finish, surf, clearType, workflow, autoSel, manual, pigments, matTotal, pigTotal, grand, uPrice, memo, laborCost, taxIncl, surplusInfo })}
                 className="ca-btn-primary"
                 style={{
                   flex: 1, padding: "11px", borderRadius: 4, border: `1.5px solid ${C.accent}`,
