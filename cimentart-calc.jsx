@@ -1364,8 +1364,72 @@ function ColorFormulaPanel({ open, onClose, activeFinish }) {
   );
 }
 
+/* ━━━ InventoryPanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function InventoryPanel({ inventory, onChange }) {
+  const mats = Object.entries(inventory).filter(([, v]) => v && v.remainingArea > 0);
+  const updateItem = (key, field, value) => {
+    const next = { ...inventory, [key]: { ...inventory[key], [field]: value } };
+    onChange(next);
+  };
+  const removeItem = (key) => {
+    const next = { ...inventory, [key]: { ...inventory[key], remainingArea: 0 } };
+    onChange(next);
+  };
+  return (
+    <div style={{ background: C.white, borderRadius: 4, border: `1px solid ${C.border}` }}>
+      <div style={{ padding: "12px 14px 8px", borderBottom: `1px solid ${C.borderLt}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>在庫一覧表</div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>余り材料の在庫管理（手入力で調整可）</div>
+        </div>
+        {mats.length > 0 && (
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#3d7a58", background: "#e8f5e9", padding: "2px 8px", borderRadius: 10 }}>{mats.length}品目</span>
+        )}
+      </div>
+      <div style={{ padding: "10px 14px 14px" }}>
+        {mats.length === 0 ? (
+          <div style={{ fontSize: 11, color: C.muted, textAlign: "center", padding: "16px 0" }}>
+            在庫なし<br />
+            <span style={{ fontSize: 10 }}>材料カードの余り試算から追加できます</span>
+          </div>
+        ) : (
+          mats.map(([key, item]) => (
+            <div key={key} style={{ marginBottom: 10, padding: "8px 10px", background: "#f0f7f2", borderRadius: 4, border: "1px solid #b2dfca" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#3d7a58" }}>{item.name}</span>
+                <button onClick={() => removeItem(key)} style={{ fontSize: 10, color: "#b54a4a", background: "none", border: "none", cursor: "pointer", padding: 0 }}>✕ 削除</button>
+              </div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
+                <span style={{ fontSize: 10, color: C.muted, whiteSpace: "nowrap" }}>残り</span>
+                <input
+                  type="number"
+                  value={item.remainingArea}
+                  min="0"
+                  step="0.5"
+                  onChange={(e) => updateItem(key, 'remainingArea', Math.round(parseFloat(e.target.value || 0) * 10) / 10)}
+                  style={{ width: 58, padding: "3px 6px", borderRadius: 3, border: "1px solid #b2dfca", fontSize: 13, fontWeight: 700, textAlign: "right", outline: "none", background: C.white }}
+                />
+                <span style={{ fontSize: 10, color: C.muted }}>㎡</span>
+                <span style={{ fontSize: 11, color: C.sub, marginLeft: 2 }}>≒ {fmt(item.estimatedValue)}</span>
+              </div>
+              <input
+                type="text"
+                value={item.note || ""}
+                onChange={(e) => updateItem(key, 'note', e.target.value)}
+                placeholder="メモ（例：A邸の余り）"
+                style={{ width: "100%", padding: "3px 6px", borderRadius: 3, border: "1px solid #b2dfca", fontSize: 10, outline: "none", fontFamily: "inherit", background: C.white, boxSizing: "border-box" }}
+              />
+              {item.updatedAt && <div style={{ fontSize: 9, color: C.muted, marginTop: 3 }}>更新: {item.updatedAt}</div>}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ━━━ SidebarPricePanel ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function SidebarPricePanel({ workflow, manualNotes, adjLog, onAddLog }) {
+function SidebarPricePanel({ workflow, manualNotes, adjLog, onAddLog, inventory, onInventoryChange }) {
   const [logInput, setLogInput] = useState("");
 
   const handleAdd = () => {
